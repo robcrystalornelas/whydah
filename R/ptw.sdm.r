@@ -2,9 +2,8 @@
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 setwd("~/Desktop/Whydah Project/whydah/Data")
-load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
+load("~/Desktop/Whydah Project/whydah/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
-#Try ENMTools?#
 Sys.setenv(NOAWT=TRUE)
 library(rJava)
 library(gurobi)
@@ -541,7 +540,8 @@ p<-ggplot(data=df, aes(y=lat, x=lon)) +
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black")
-values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can inset this if we want to change spacing
+
+#values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can inset this if we want to change spacing
 
 ?scale_fill_gradientn
 #scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.9)) #this one works!
