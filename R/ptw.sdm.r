@@ -59,7 +59,8 @@ j
 # for the mismatches, bind the country names of the polygons and points
 cbind(cntr, ptw.unique$country)[j,] #here's all the spots we have mismatches
 plot(ptw.unique)
-#data("wrld_simpl")
+
+data("wrld_simpl")
 plot(wrld_simpl, add=T, border= "blue" , lwd=1)
 points(ptw.unique[j, ], col="red" , pch=20, cex=.75)
 
@@ -444,9 +445,6 @@ plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(pres_train, pch= '+' )
 plot(e, 'ROC')
 
-#Making Maps from MaxEnt Raw Scores
-plot(px, col())
-
 #Elith Tutorial Over, Now cobbled together resources####
 data(wrld_simpl)
 plot(wrld_simpl)
@@ -503,6 +501,19 @@ mx <- maxent(envs,train,a=backg,args=c('betamultiplier=3','responsecurves=TRUE',
 mx <- maxent(envs,train) #works!
 response(mx) #these are response curves
 plot(mx) #this shows importance of each variable in building model
+
+#Model Evaluation
+e <- evaluate(test, backg_test, mx, envs) #evalute test points, pseudo-absences (random background points), the model and predictors
+e #shows number of presences/absences/AUC and cor
+px <- predict(envs, xm, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+tr <- threshold(e, 'spec_sens' )
+plot(px > tr, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e, 'ROC')
 
 #Make predictions with model output
 r1<-predict(mx, envs)
@@ -603,6 +614,9 @@ enmeval_results@results
 # n.bg is The number of random background localities to draw from the study extent
 #when overlap = TRUE, provides pairwise metric of niche overlap 
 #bin.output appends evaluations metrics for each evaluation bin to results table
+
+#Testing Methods for PCA####
+??vif()
 
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
