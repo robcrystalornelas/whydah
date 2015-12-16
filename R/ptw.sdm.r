@@ -1,5 +1,5 @@
 ##SDM for PTW#
-#install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr"))
+#install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 setwd("~/Desktop/Whydah Project/whydah/Data")
 load("~/Desktop/Whydah Project/whydah/whydah_workspace.RData")
@@ -22,6 +22,7 @@ library(RColorBrewer)
 library(dplyr)
 library(tmap)
 library(scales)
+library(ecospat)
 
 #Full occurrence dataset####
 #ptw<-gbif('Vidua', 'macroura', geo=T, removeZeros = T)
@@ -421,8 +422,8 @@ points(pres_test, pch= '+' , col= 'blue' ) #shows our test presences
 #examples of linear regression SDMs####
 train <- rbind(pres_train, backg_train)
 pb_train <- c(rep(1, nrow(pres_train)), rep(0, nrow(backg_train)))
-envtrain <- extract(predictors, train)
-envtrain <- data.frame( cbind(pa=pb_train, envtrain) )
+envtrain <- extract(predictors, pres_train)
+envtrain <- data.frame( cbind(pa=pres_train, envtrain) )
 head(envtrain) #extract enviro data for our training presnece points
 testpres <- data.frame( extract(predictors, pres_test) )#enviro for test presence
 testbackg <- data.frame( extract(predictors, backg_test) ) #enviro for test background
@@ -615,8 +616,116 @@ enmeval_results@results
 #when overlap = TRUE, provides pairwise metric of niche overlap 
 #bin.output appends evaluations metrics for each evaluation bin to results table
 
-#Testing Methods for PCA####
-??vif()
+#Different Methods for PCA####
+
+#Select07 From Dormann et al. 2012####
+h<-select07(envtrain,train, family="binomial",univar="glm",threshold=.7, method="pearson")
+head(envtrain)
+head(h)
+
+select07 <- function(X, y, family="binomial", univar="gam", threshold=0.7,
+                     method="pearson", sequence=NULL, ...){
+ 
+  #.7 is recommended for threshold by Fielding and Haworth 1995
+  #if data is bi-variate normal stick with pearson for method, otherwise go "spearman"
+  #sequence can be used to specify the order of predictor variable importance
+  
+  #From Dormann:
+  # selects variables based on removing correlations > 0.7, retaining those
+  # variables more important with respect to y
+  # when a sequence is given, this will be used instead (Damaris)
+  # 1. step: cor-matrix
+  # 2. step: importance vector
+  # 3. step: identify correlated pairs
+  # 4. step: remove less important from pairs
+  #get rid of it II: seqreg, select07,maxspan
+  # written by Carsten F. Dormann;
+  # last changed by Tamara Münkemüller and Damaris Zurell, 12.12.2007
+  # last changed by Damaris Zurell, 19.12.2008
+  var.imp <- function (variable, response, univar=univar, family="gaussian"){
+    # calculates the univariate (=marginal) importance of a variable for a response
+    if (!univar %in% c("glm", "gam")) stop("Invalid univariate screening method:
+                                           choose 'glm' or 'gam' (default).")
+    if (univar=="glm"){
+      fm.glm <- glm(response ~ variable, family=family)
+      summary(fm.glm)$aic
+    } else {
+      fm.gam <- gam(response ~ s(variable, ...), family=family)
+      AIC(fm.gam)
+    }
+  }
+  cm <- cor(X, method=method)
+  pairs <- which(abs(cm)>= threshold, arr.ind=T) # identifies correlated variable pairs
+  index <- which(pairs[,1]==pairs[,2]) # removes entry on diagonal
+  pairs <- pairs[-index,] # -"-
+  exclude <- NULL
+  if (NROW(pairs)!=0)
+  {
+    if (is.null(sequence)) {
+      #importance as AIC: the lower the better!
+      imp <- apply(X, 2, var.imp, response=y, family=family, univar=univar)
+      for (i in 1:NROW(pairs))
+      {
+        a <- imp[rownames(cm)[pairs[i,1]]]
+        b <- imp[rownames(cm)[pairs[i,2]]]
+        exclude <- c(exclude, ifelse(a>b, names(a), names(b)))
+      }
+    } else {
+      for (i in 1:NROW(pairs))
+      {
+        a <- which(pairs[i,1]==sequence)
+        b <- which(pairs[i,2]==sequence)
+        exclude <- c(exclude, ifelse(a>b, rownames(cm)[pairs[i,1]],
+                                     rownames(cm)[pairs[i,2]]))
+      }
+    }
+  }
+  X <- X[,!(colnames(X) %in% unique(exclude)),drop=F]
+  return(X)
+  }
+#select07(X=LE, y=LanExc12[,"c"], family="binomial", threshold=0.7,method="spearman")[1:10,]
+formula.maker <- function(dataframe, y.col=1, quadratic=TRUE, interactions=TRUE) {
+  # makes a formula for GLM from dataframe column names,
+  # including quadratic effects and first-order interactions
+  # by default, first column is taken to be the response (y); else, an integer giving the column with the response in "dataframe"
+  # by Carsten F. Dormann
+  if (quadratic && interactions) {
+    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ (",
+                          paste(colnames(dataframe[,-y.col]), collapse=" + ", sep=""), ")^2 + ", paste("I(",
+                                                                                                       colnames(dataframe[,-y.col]), "^2)", collapse="+", sep="")))
+  }
+  if (quadratic & !interactions){
+    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ (",
+                          paste(colnames(dataframe[,-y.col]), collapse=" + ", sep=""), ") + ", paste("I(",
+                                                                                                     colnames(dataframe[,-y.col]), "^2)", collapse="+", sep="")))
+  }
+  if (!quadratic & !interactions){
+    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ ", paste(colnames(dataframe[,
+                                                                                      -y.col]), collapse=" + ", sep="") ))
+  }
+  if (!quadratic & interactions){
+    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ (",
+                          paste(colnames(dataframe[,-y.col]), collapse=" + ", sep=""), ")^2"))
+    # + ", paste("I(", colnames(dataframe[,-1]), "^2)", collapse="+", sep="")))
+  }
+  f
+}
+
+#Regular PCA####
+head(envtrain)
+class(envtrain)
+z2<-prcomp(~bio1+bio2+bio3+bio4+bio5+bio6+bio7+bio8+bio9+bio10+bio11+bio12+bio13+bio14+bio15+bio16+bio17+bio18+bio19, data=envtrain, center=T, scale=T)
+summary(z2) #prop. variance is simular to eigen value
+print(z2) #this function prints loadings for each PCA
+z2$sdev^2 #but this truly gives our eigen values for each PC...if we wanted to keep
+#only eigen vaues greater than 1, we would select first 3 eigen vectors
+z2$rotation #for EIGEN VECTORS
+plot(z2, type="l") #screeplot1
+screeplot(z2, type="l")  #screeplot2
+biplot(z2, cex=0.7) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+z3<- predict(z2) #make further predictions w/ PCA results
+z3 #matrix of PC values
+plot(z3[,1], z3[,2],xlim=c(-12,7), ylim=c(-12,7)) #plot the first two PCs, and make axes the same for each comparison of axes
 
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
