@@ -433,10 +433,13 @@ pa<-pb_train
 #SDM using MaxEnt (Hijmans/Elith) WORKS! #####
 xm <- maxent(predictors, pres_train)
 plot(xm) #variable contribution plot
+str(xm)
+xm@lambdas
 response(xm) #response curves
 e <- evaluate(pres_test[,1:2], backg_test, xm, predictors) #evalute test points, pseudo-absences, the model and predictors
 e #shows number of presences/absences/AUC and cor
 px <- predict(predictors, xm, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+head(px)
 par(mfrow=c(1,2))
 plot(px, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
@@ -619,10 +622,6 @@ enmeval_results@results
 #Different Methods for PCA####
 
 #Select07 From Dormann et al. 2012####
-h<-select07(envtrain,train, family="binomial",univar="glm",threshold=.7, method="pearson")
-head(envtrain)
-head(h)
-
 select07 <- function(X, y, family="binomial", univar="gam", threshold=0.7,
                      method="pearson", sequence=NULL, ...){
  
@@ -711,10 +710,26 @@ formula.maker <- function(dataframe, y.col=1, quadratic=TRUE, interactions=TRUE)
   f
 }
 
+
+envtrain
+envtrain.just.bioclim<-envtrain[,3:21]
+N<-scale(envtrain.just.bioclim) #Maybe all climate variables need to be all on same scale?
+head(N)
+g<-cor(N, use="complete")
+g #this is the corrleation matrix
+suit<-extract(px, envtrain[,1:2]) #if we also need the suitability scores for our response
+suit2<-cbind(suit,N)
+head(suit2)
+suit3<-suit2[complete.cases(suit2),]
+h<-select07(suit3[,2:20],suit3[,1], family="gaussian",univar="glm",threshold=.7, method="pearson")
+#predictors can be continuous & Categorical, response must be any type of variable accepted by glm
+head(h) #this suggests bio1, 16, 18, 19
+
 #Regular PCA####
 head(envtrain)
 class(envtrain)
 z2<-prcomp(~bio1+bio2+bio3+bio4+bio5+bio6+bio7+bio8+bio9+bio10+bio11+bio12+bio13+bio14+bio15+bio16+bio17+bio18+bio19, data=envtrain, center=T, scale=T)
+?prcomp
 summary(z2) #prop. variance is simular to eigen value
 print(z2) #this function prints loadings for each PCA
 z2$sdev^2 #but this truly gives our eigen values for each PC...if we wanted to keep
