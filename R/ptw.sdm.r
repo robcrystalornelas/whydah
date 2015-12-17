@@ -1,6 +1,7 @@
 ##SDM for PTW#
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
+install.packages('rgbif')
 setwd("~/Desktop/Whydah Project/whydah/Data")
 load("~/Desktop/Whydah Project/whydah/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
@@ -19,6 +20,7 @@ library(devtools)
 library(scales)
 library(ggplot2)
 library(RColorBrewer)
+library(rgbif)
 library(dplyr)
 library(tmap)
 library(scales)
@@ -36,6 +38,23 @@ head(ptw)
 ptw.unique<- distinct(select(ptw,lon,lat,country,species)) #remove duplicates
 dim(ptw.unique)
 head(ptw.unique)
+
+#Removing outliers
+unique(ptw.unique$country) #Remove Taiwan Whydahs
+ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.  From many years ago, and not over a consistent amount of years
+click()
+filter(ptw.unique, lon<(-80) & lat>30 & country=="United States") #find Chicago point
+which(ptw.unique$lon == -82.9989, ptw.unique$lat== 39.96110) #find it in the data.frame
+ptw.unique<- ptw.unique[-4493,] #remove that row!
+
+#only complete cases
+ptw.unique<-ptw.unique[complete.cases(ptw.unique),]
+dim(ptw.unique)
+is.na(ptw.unique) #no NAs in df
+
+#check map
+plot(wrld_simpl)
+points(ptw.unique, col="red")
 
 #Clean/Organize Data####
 lonzero = subset(ptw.unique, lon==0) #any points have longitude that was auto-set to 0
@@ -98,7 +117,12 @@ thin_ptw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ptw2)
 thin_ptw2_coords<-thin_ptw2[,1:2]
 
-#OCW Points####
+#Further cleaning of PTW Occurrence points
+plot(wrld_simpl)
+points(thin_ptw2_coords, col='red')
+
+
+#OCW Occurrence Points####
 setwd("~/Desktop/Whydah Project/whydah/Data") #set back to data directory
 plot(thin_ptw2_coords)
 
