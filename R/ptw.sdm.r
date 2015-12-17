@@ -47,6 +47,10 @@ filter(ptw.unique, lon<(-80) & lat>30 & country=="United States") #find Chicago 
 which(ptw.unique$lon == -82.9989, ptw.unique$lat== 39.96110) #find it in the data.frame
 ptw.unique<- ptw.unique[-4493,] #remove that row!
 
+filter(ptw.unique, lon<(-122) & lat>35 & country=="United States") #find San Fran point
+which(ptw.unique$lon == -122.511, ptw.unique$lat== 37.7777)
+ptw.unique<-ptw.unique[-1312,] #remove san fran point
+
 #only complete cases
 ptw.unique<-ptw.unique[complete.cases(ptw.unique),]
 dim(ptw.unique)
@@ -88,7 +92,6 @@ points(ptw.unique[j, ], col="red" , pch=20, cex=.75)
 setwd("~/Desktop/Whydah Project/whydah/Output") #running from mac
 # set coordinate system
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-ptw.unique<- distinct(select(ptw,lon,lat,country,species))
 #then spThin!
 thin1 <-spThin(
   ptw.unique, 
@@ -116,15 +119,17 @@ write.SpThin(
 thin_ptw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ptw2)
 thin_ptw2_coords<-thin_ptw2[,1:2]
+plot(thin_ptw2_coords)
 
-#Further cleaning of PTW Occurrence points
-plot(wrld_simpl)
-points(thin_ptw2_coords, col='red')
-
+#calculate bounding box
+min(thin_ptw2_coords$lon)
+max(thin_ptw2_coords$lon)
+min(thin_ptw2_coords$lat)
+max(thin_ptw2_coords$lat)
+#bounding box is... y (lat) min = -34.8324, ymax=41.526  /  x (lon) min = -118.808, xmax = 55.4539
 
 #OCW Occurrence Points####
 setwd("~/Desktop/Whydah Project/whydah/Data") #set back to data directory
-plot(thin_ptw2_coords)
 
 #OCW Points####
 #ocw<-gbif('Estrilda', 'melpoda', geo=T, removeZeros = T)
@@ -139,7 +144,65 @@ head(ocw)
 ocw.unique<- distinct(select(ocw,lon,lat,country,species)) #remove duplicates
 dim(ocw.unique)
 head(ocw.unique)
-#Clean Up the Data####
+
+#Removing outliers by country
+plot(wrld_simpl)
+points(ocw.unique, col="red")
+
+unique(ocw.unique$country)
+ocw.unique<-filter(ocw.unique, country !="Canada") #Remove Canada
+ocw.unique<-filter(ocw.unique, country !="Germany") #Remove Germany
+unique(ocw.unique$country)
+
+#Remove outliers by lon/lat
+click()
+filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find northern midwest point
+which(ocw.unique$lon == -95.55926, ocw.unique$lat== 29.69430) #find it in the data.frame
+ocw.unique<- ocw.unique[-404,] #remove that row!
+
+filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find 2nd midwest points
+points(-96.67213,40.80549,col="green") #make sure it's the right one
+which(ocw.unique$lon == -96.67213, ocw.unique$lat== 40.80549) #find it in the data.frame
+ocw.unique<- ocw.unique[-1027,] #remove that row!
+
+filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find 3rd midwest points
+points(-96.67964,40.80004,col="purple") #make sure it's the right one
+which(ocw.unique$lon == -96.67964, ocw.unique$lat== 40.80004) #find it in the data.frame
+ocw.unique<- ocw.unique[-1081,] #remove that row!
+
+filter(ocw.unique, lon>(-87) & lat>(36) & country=="United States") #find DC point
+points(-77.09590,38.75890,col="purple") #make sure it's the right one
+which(ocw.unique$lon == -77.09590, ocw.unique$lat== 38.75890) #find it in the data.frame
+ocw.unique<- ocw.unique[-607,] #remove that row!
+
+points(-77.10650,38.75890,col="green") #make sure it's the right one
+which(ocw.unique$lon == -77.10650, ocw.unique$lat== 38.75890) #find it in the data.frame
+ocw.unique<- ocw.unique[-612,] #remove that row!
+
+points(-83.14313,42.47483,col="green") #make sure it's the right one
+which(ocw.unique$lon == -83.14313, ocw.unique$lat== 42.47483) #find it in the data.frame
+ocw.unique<- ocw.unique[-955,] #remove that row!
+
+filter(ocw.unique, lon<(-120) & lat>35 & country=="United States") #find 1st San Fran point
+which(ocw.unique$lat == 38.57520)
+points(-121.4675,38.57520,col="red")
+ocw.unique<-ocw.unique[-858,]
+
+#remove san fran point
+
+#find 2nd San Fran point
+which(ocw.unique$lat == 41.96554)
+ocw.unique<-ocw.unique[-1057,] #remove san fran point
+
+#re-check ocw points
+plot(wrld_simpl)
+points(ocw.unique,col="red")
+
+#only complete cases
+ocw.unique<-ocw.unique[complete.cases(ocw.unique),]
+dim(ocw.unique)
+
+#checking for any zero values
 lonzero = subset(ocw.unique, lon==0) #any points have longitude that was auto-set to 0
 lonzero
 duplicated(ocw.unique) #any duplicates?
@@ -200,6 +263,28 @@ head(cw)
 cw.unique<- distinct(select(cw,lon,lat,country,species)) #remove duplicates
 dim(cw.unique)
 head(cw.unique)
+
+#Removing Common Waxbill outliers by country
+plot(wrld_simpl)
+points(cw.unique, col="red")
+cw.unique<-cw.unique[complete.cases(cw.unique),]
+
+
+cw.unique<-filter(cw.unique, country !="Canada")#Remove Canada
+cw.unique<-filter(cw.unique, country !="United Arab Emirates") #remove UAE (listed as escapes)
+unique(cw.unique$country)
+
+#Remove Common Waxbill outliers by lon/lat
+click()
+filter(cw.unique, lon<(-72) & lat>(35)) #find northern midwest point
+points(-77.22568,38.97612)
+which(cw.unique$lon == -77.22568, cw.unique$lat== 38.97612) #find it in the data.frame
+cw.unique<- cw.unique[-6050,] #remove that row!
+
+#Check Common Waxbill Points
+plot(wrld_simpl)
+points(cw.unique, col="red")
+
 #Clean Up the Data
 lonzero = subset(cw.unique, lon==0) #any points have longitude that was auto-set to 0
 lonzero #all OK
