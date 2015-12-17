@@ -233,6 +233,7 @@ thin_cw2
 thin_ocw2
 
 #Environmental Variables####
+
 # get the file names...these should be all of our our bioclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
 files
@@ -251,200 +252,12 @@ points(bg, cex=0.5) #here's where the background points are from
 #plot(e, add=TRUE, col= 'red')
 #points(bg2, cex=0.5)
 
-#Preparing Host/Climate Rasters####
-#Function for Presence/Absence Rasters for Host Species by Amy Whitehead
-presence.absence.raster <- function (mask.raster,species.data,raster.label="") {
-  require(raster)
-  
-  # set the background cells in the raster to 0
-  mask.raster[!is.na(mask.raster)] <- 0
-  
-  #set the cells that contain points to 1
-  speciesRaster <- rasterize(species.data,mask.raster,field=1)
-  speciesRaster <- merge(speciesRaster,mask.raster)
-  
-  #label the raster
-  names(speciesRaster) <- raster.label
-  return(speciesRaster)
-}
-
-#P/A Raster for Common Waxbill
-species <- "Common Waxbill"
-thin_cw2<-thin_cw2[,1:2] #prepare only lat/lon data for pres/absence
-# read in a raster of the world
-setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
-myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
-
-# create presence absence raster for Common Waxbills using pre-made function
-pa_raster_cw <- presence.absence.raster(mask.raster=myRaster, species.data=thin_cw2, raster.label=species)
-pa_raster_cw
-plot(pa_raster_cw, main="Common Waxbill Presence/Absence Raster File")
-
-#P/A Raster for Orange-Cheeked Waxbill
-species <- "Orange Cheeked Waxbill"
-thin_ocw2<-thin_ocw2[,1:2] #prepare only lat/lon data for pres/absence
-# read in a raster of the world
-setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
-myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
-
-# create presence absence raster for Common Waxbills using pre-made function
-pa_raster_ocw <- presence.absence.raster(mask.raster=myRaster, species.data=thin_ocw2, raster.label=species)
-pa_raster_ocw
-plot(pa_raster_ocw, main="Orance Cheeked Waxbill Presence/Absence Raster File")
-
-#Now, onto bioclim data
-files #here are all climate files
-predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & waxbill presence/absence
-predictors_ocw<-stack(files, pa_raster_ocw)
-plot(predictors_cw)
-plot(predictors_ocw)
-
-#background points
-backg <- randomPoints(predictors, n=1000) #pull background points from specified extent
-#ext = extent(-90, -32, -33, 23) #to speed up how quickly everything processes, so limit our extent
-
-#SDM using MaxEnt (Hijmans/Elith)#####
-click() #tells us coordinates on map
-#envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
-#envs<-crop(envs,north.america)
-
-#Prepare Training and Testing dataset####
-folds<-kfold(thin_ptw2_coords, k=4) #this is a 4 fold test
-train<-thin_ptw2_coords[folds>1,] #training has 75% of points
-test<-thin_ptw2_coords[folds==1,] #testing has 25% of points
-train<-train[,1:2]
-test<-test[,1:2]
-head(train) #just has lon/lat
-
-#MaxEnt####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
-occs<-thin_ptw2_coords[,1:2] #lon/lat of thinned ptw points
-extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-names(envs)
-mx <- maxent(envs,train,a=backg,factors="Common.Waxbill",args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-mx_pc<-maxent(pc_select,train,a=backg)
-
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
-
-#mx <- maxent(envs,train) #simplest maxent model also works
-response(mx) #these are response curves
-plot(mx) #this shows importance of each variable in building model
-
-#Model Evaluation
-e <- evaluate(test, backg_test, mx, envs) #evalute test points, pseudo-absences (random background points), the model and predictors
-e #shows number of presences/absences/AUC and cor
-px <- predict(envs, xm, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
-par(mfrow=c(1,2))
-plot(px, main= 'Maxent, raw values')
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-tr <- threshold(e, 'spec_sens' )
-plot(px > tr, main='presence/absence')
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-points(train, pch= '+')
-plot(e, 'ROC')
-
-#Make predictions using model output
-r1<-predict(mx, envs)
-#predictions with additional parameters
-r2 <- predict(mx, envs, args=c("outputformat=raw"), progress='text', 
-              filename='maxent_prediction.grd', overwrite=TRUE)
-plot(r1, main="MaxEnt Predictions for PTW")
-points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
-points(test, pch=16, cex=.15, col="purple") #map of testing points
-
-#Plotting Maxent output
-map.p <- rasterToPoints(r1) #make predictions raster a set of points for ggplot
-df <- data.frame(map.p) #convert to data.frame
-head(df)
-colnames(df) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-head(thin_ptw2_coords)
-
-#Now make the map
-p<-ggplot(data=df, aes(y=lat, x=lon)) +
-  geom_raster(aes(fill=Suitability)) +
-  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
-  theme_bw() +
-  coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs with Common Waxbills") +
-  theme(axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16, angle=90),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = 'right',
-        legend.key = element_blank()
-  )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
-
-#values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
-?scale_fill_gradientn
-#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.9)) #this one works!
-scale_fill_brewer(palette = "PRGn") #didn't work because data sent over must be discrete
-
-#test the maxent model
-#simplest way to eval
-e1<-evaluate(mx, p=test, a=backg_test, x=envs)
-
-#Try evaluation method to get ROC
-pvtest <- data.frame(extract(envs, test))
-avtest <- data.frame(extract(envs, bg))
-testp<-predict(mx,pvtest)
-head(testp)
-testa<-predict(mx,avtest)
-e3<-evaluate(p=testp, a=testa)
-e3
-threshold(e3)
-plot(e3, 'ROC')
-
-#from Hijmans & Elith 2015#
-e<-evaluate(p=testp, a=testa)
-px <- predict(mx, envs, args=c("outputformat=raw"), progress='text', 
-              filename='maxent_prediction.grd', overwrite=TRUE)
-par(mfrow=c(1,2))
-plot(px, main='maxent, raw values')
-plot(wrld_simpl, add=TRUE, border='dark grey')
-tr<-threshold(e, 'spec_sens')
-plot(px>tr, main = 'presence/absence')
-plot(wrld_simpl, add=TRUE, border='dark grey')
-points(train, pch="+", cex=.2)
-
-###ENMeval###
-#enmeval_results <- ENMevaluate(thin_ptw2_coords, predictors, method="block", n.bg=500, overlap=TRUE,
-#                              bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-
-#save(enmeval_results, file="enmeval_results.rdata")
-load("enmeval_results.rdata")
-enmeval_results
-plot(enmeval_results@predictions[[which (enmeval_results@results$delta.AICc == 0) ]])
-points(enmeval_results@occ.pts, pch=21, bg=enmeval_results@occ.grp)
-head(enmeval_results@results)
-enmeval_results@overlap
-
-par(mfrow=c(2,2))
-eval.plot(enmeval_results@results, legend.position="topright")
-eval.plot(enmeval_results@results, "Mean.AUC", )
-eval.plot(enmeval_results@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
-eval.plot(enmeval_results@results, "Mean.ORmin")
-#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
-enmeval_results@results
-# specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
-# n.bg is The number of random background localities to draw from the study extent
-#when overlap = TRUE, provides pairwise metric of niche overlap 
-#bin.output appends evaluations metrics for each evaluation bin to results table
-
 #Different Methods for PCA####
-#Select07 From Dormann et al. 2012
+
+# Select07 From Dormann et al. 2012
 select07 <- function(X, y, family="binomial", univar="gam", threshold=0.7,
                      method="pearson", sequence=NULL, ...){
- 
+  
   #.7 is recommended for threshold by Fielding and Haworth 1995
   #if data is bi-variate normal stick with pearson for method, otherwise go "spearman"
   #sequence can be used to specify the order of predictor variable importance
@@ -554,7 +367,7 @@ dim(suit5)
 h2<-select07(suit5[,2:21],suit5[,1], family="gaussian",univar="glm",threshold=.7, method="pearson") #sequence = c(20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2))
 head(h2) #when waxbill is included, suggest bio1, 16, 18, 19 & Waxbill
 
-#Regular PCA####
+# Traditional PCA with each variable separate####
 head(envtrain)
 class(envtrain)
 z2<-prcomp(~bio1+bio2+bio3+bio4+bio5+bio6+bio7+bio8+bio9+bio10+bio11+bio12+bio13+bio14+bio15+bio16+bio17+bio18+bio19, data=envtrain, center=T, scale=T)
@@ -569,6 +382,222 @@ biplot(z2, cex=0.7) #Making a biplot, can used choices=c(...) to specify which a
 z3<- predict(z2) #make further predictions w/ PCA results
 z3 #matrix of PC values
 plot(z3[,1], z3[,2],xlim=c(-12,7), ylim=c(-12,7)) #plot the first two PCs, and make axes the same for each comparison of axes
+
+#More Traditional PCA with raster stack converted to DF
+v1<-princomp(na.omit(values(envs)), cor=TRUE)
+plot(v1)
+varimax(v1$loadings[,1:4])
+
+?raster::predict 
+
+envs.df<-as.data.frame(envs)
+envs.df<-envs.df[,1:19]
+envs.df.no.na<-na.omit(envs.df)
+
+
+PCA<-prcomp(envs.df.no.na, center=T,scale=T)
+summary(PCA)
+print(PCA)
+
+#Example from Hijmans for calculating PCA of Rasterstack
+#sr <- sampleRandom(envs.df, 1000) #could sample randomly of rasterbrick is too large
+pca <- prcomp(na.omit(values(envs)), scale=T, center=T)
+x <- predict(envs, pca, index=1:4) #so this should be (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(x)
+class(x)
+
+
+#Preparing Host/Climate Rasters####
+
+#Function for Presence/Absence Rasters for Host Species by Amy Whitehead
+presence.absence.raster <- function (mask.raster,species.data,raster.label="") {
+  require(raster)
+  
+  # set the background cells in the raster to 0
+  mask.raster[!is.na(mask.raster)] <- 0
+  
+  #set the cells that contain points to 1
+  speciesRaster <- rasterize(species.data,mask.raster,field=1)
+  speciesRaster <- merge(speciesRaster,mask.raster)
+  
+  #label the raster
+  names(speciesRaster) <- raster.label
+  return(speciesRaster)
+}
+
+#P/A Raster for Common Waxbill
+species <- "Common Waxbill"
+thin_cw2<-thin_cw2[,1:2] #prepare only lat/lon data for pres/absence
+# read in a raster of the world
+setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
+myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
+
+# create presence absence raster for Common Waxbills using pre-made function
+pa_raster_cw <- presence.absence.raster(mask.raster=myRaster, species.data=thin_cw2, raster.label=species)
+pa_raster_cw
+plot(pa_raster_cw, main="Common Waxbill Presence/Absence Raster File")
+
+#P/A Raster for Orange-Cheeked Waxbill
+species <- "Orange Cheeked Waxbill"
+thin_ocw2<-thin_ocw2[,1:2] #prepare only lat/lon data for pres/absence
+# read in a raster of the world
+setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
+myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
+
+# create presence absence raster for Common Waxbills using pre-made function
+pa_raster_ocw <- presence.absence.raster(mask.raster=myRaster, species.data=thin_ocw2, raster.label=species)
+pa_raster_ocw
+plot(pa_raster_ocw, main="Orance Cheeked Waxbill Presence/Absence Raster File")
+
+#Now, onto bioclim data
+files #here are all climate files
+predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & waxbill presence/absence
+predictors_ocw<-stack(files, pa_raster_ocw)
+plot(predictors_cw)
+plot(predictors_ocw)
+
+#background points
+backg <- randomPoints(predictors, n=1000) #pull background points from specified extent
+#ext = extent(-90, -32, -33, 23) #to speed up how quickly everything processes, so limit our extent
+
+#SDM using MaxEnt (Hijmans/Elith)#####
+click() #tells us coordinates on map
+#envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
+#envs<-crop(envs,north.america)
+
+#Prepare Training and Testing dataset####
+folds<-kfold(thin_ptw2_coords, k=4) #this is a 4 fold test
+train<-thin_ptw2_coords[folds>1,] #training has 75% of points
+test<-thin_ptw2_coords[folds==1,] #testing has 25% of points
+train<-train[,1:2]
+test<-test[,1:2]
+head(train) #just has lon/lat
+
+#MaxEnt Model for Whydah w/ CW & 19 Bioclim####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
+occs<-thin_ptw2_coords[,1:2] #lon/lat of thinned ptw points
+extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+names(envs)
+mx <- maxent(envs,train,a=backg,factors="Common.Waxbill",args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_pc<-maxent(pc_select,train,a=backg)
+
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+
+#mx <- maxent(envs,train) #simplest maxent model also works
+response(mx) #these are response curves
+plot(mx) #this shows importance of each variable in building model
+
+#Model Evaluation
+e <- evaluate(test, backg_test, mx, envs) #evalute test points, pseudo-absences (random background points), the model and predictors
+e #shows number of presences/absences/AUC and cor
+px <- predict(envs, xm, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+tr <- threshold(e, 'spec_sens' )
+plot(px > tr, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e, 'ROC')
+
+#Make predictions using model output
+r1<-predict(mx, envs)
+#predictions with additional parameters
+r2 <- predict(mx, envs, args=c("outputformat=raw"), progress='text', 
+              filename='maxent_prediction.grd', overwrite=TRUE)
+plot(r1, main="MaxEnt Predictions for PTW")
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+
+#Plotting Maxent output
+map.p <- rasterToPoints(r1) #make predictions raster a set of points for ggplot
+df <- data.frame(map.p) #convert to data.frame
+head(df)
+colnames(df) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+
+#Now make the map
+p<-ggplot(data=df, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black")
+
+#values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
+?scale_fill_gradientn
+#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.9)) #this one works!
+scale_fill_brewer(palette = "PRGn") #didn't work because data sent over must be discrete
+
+#test the maxent model
+#simplest way to eval
+e1<-evaluate(mx, p=test, a=backg_test, x=envs)
+
+#Try evaluation method to get ROC
+pvtest <- data.frame(extract(envs, test))
+avtest <- data.frame(extract(envs, bg))
+testp<-predict(mx,pvtest)
+head(testp)
+testa<-predict(mx,avtest)
+e3<-evaluate(p=testp, a=testa)
+e3
+threshold(e3)
+plot(e3, 'ROC')
+
+#from Hijmans & Elith 2015#
+e<-evaluate(p=testp, a=testa)
+px <- predict(mx, envs, args=c("outputformat=raw"), progress='text', 
+              filename='maxent_prediction.grd', overwrite=TRUE)
+par(mfrow=c(1,2))
+plot(px, main='maxent, raw values')
+plot(wrld_simpl, add=TRUE, border='dark grey')
+tr<-threshold(e, 'spec_sens')
+plot(px>tr, main = 'presence/absence')
+plot(wrld_simpl, add=TRUE, border='dark grey')
+points(train, pch="+", cex=.2)
+
+###ENMeval###
+#enmeval_results <- ENMevaluate(thin_ptw2_coords, predictors, method="block", n.bg=500, overlap=TRUE,
+#                              bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+
+#save(enmeval_results, file="enmeval_results.rdata")
+load("enmeval_results.rdata")
+enmeval_results
+plot(enmeval_results@predictions[[which (enmeval_results@results$delta.AICc == 0) ]])
+points(enmeval_results@occ.pts, pch=21, bg=enmeval_results@occ.grp)
+head(enmeval_results@results)
+enmeval_results@overlap
+
+par(mfrow=c(2,2))
+eval.plot(enmeval_results@results, legend.position="topright")
+eval.plot(enmeval_results@results, "Mean.AUC", )
+eval.plot(enmeval_results@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
+eval.plot(enmeval_results@results, "Mean.ORmin")
+#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
+enmeval_results@results
+# specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
+# n.bg is The number of random background localities to draw from the study extent
+#when overlap = TRUE, provides pairwise metric of niche overlap 
+#bin.output appends evaluations metrics for each evaluation bin to results table
 
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
