@@ -41,7 +41,8 @@ head(ptw.unique)
 
 #Removing outliers
 unique(ptw.unique$country) #Remove Taiwan Whydahs
-ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.  From many years ago, and not over a consistent amount of years
+ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.
+#From many years ago, and not over a consistent amount of years
 click()
 filter(ptw.unique, lon<(-80) & lat>30 & country=="United States") #find Chicago point
 which(ptw.unique$lon == -82.9989, ptw.unique$lat== 39.96110) #find it in the data.frame
@@ -59,6 +60,7 @@ is.na(ptw.unique) #no NAs in df
 #check map
 plot(wrld_simpl)
 points(ptw.unique, col="red")
+dim(ptw.unique)
 
 #Clean/Organize Data####
 lonzero = subset(ptw.unique, lon==0) #any points have longitude that was auto-set to 0
@@ -136,10 +138,10 @@ setwd("~/Desktop/Whydah Project/whydah/Data") #set back to data directory
 #save(ocw, file="ocw.rdata")
 load("ocw.rdata")
 head(ocw)
+dim(ocw)
 
 ocw<-ocw[,c('lon','lat','country','species')]
 ocw<-subset(ocw, !is.na(lat) & !is.na(lon))
-ocw<-subset(ocw, lat%%1>0 & lon%% 1>0) #Why do we use this?
 head(ocw)
 ocw.unique<- distinct(select(ocw,lon,lat,country,species)) #remove duplicates
 dim(ocw.unique)
@@ -155,7 +157,7 @@ ocw.unique<-filter(ocw.unique, country !="Germany") #Remove Germany
 unique(ocw.unique$country)
 
 #Remove outliers by lon/lat
-click()
+#click()
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find northern midwest point
 which(ocw.unique$lon == -95.55926, ocw.unique$lat== 29.69430) #find it in the data.frame
 ocw.unique<- ocw.unique[-404,] #remove that row!
@@ -187,8 +189,6 @@ filter(ocw.unique, lon<(-120) & lat>35 & country=="United States") #find 1st San
 which(ocw.unique$lat == 38.57520)
 points(-121.4675,38.57520,col="red")
 ocw.unique<-ocw.unique[-858,]
-
-#remove san fran point
 
 #find 2nd San Fran point
 which(ocw.unique$lat == 41.96554)
@@ -224,7 +224,6 @@ points(ocw.unique[j, ], col="red" , pch=20, cex=.75)
 #Thin OCW ####
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-ocw.unique<- distinct(select(ocw,lon,lat,country,species)) #remove duplicates
 
 thin_ocw <-spThin(
   ocw.unique, 
@@ -255,7 +254,7 @@ setwd("~/Desktop/Whydah Project/whydah/Data") #back to data directory
 #save(cw, file="cw.rdata")
 load("cw.rdata")
 head(cw)
-
+dim(cw)
 cw<-cw[,c('lon','lat','country','species')]
 cw<-subset(cw, !is.na(lat) & !is.na(lon))
 cw<-subset(cw, lat%%1>0 & lon%% 1>0) #Why do we use this?
@@ -275,7 +274,7 @@ cw.unique<-filter(cw.unique, country !="United Arab Emirates") #remove UAE (list
 unique(cw.unique$country)
 
 #Remove Common Waxbill outliers by lon/lat
-click()
+#click()
 filter(cw.unique, lon<(-72) & lat>(35)) #find northern midwest point
 points(-77.22568,38.97612)
 which(cw.unique$lon == -77.22568, cw.unique$lat== 38.97612) #find it in the data.frame
@@ -307,8 +306,8 @@ points(cw.unique[j, ], col="red" , pch=20, cex=.75)
 #thin Common Waxbill
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-cw.unique<- distinct(select(cw,lon,lat,country,species))
 
+dim(cw.unique)
 thin_cw <-spThin(
   cw.unique, 
   x.col = "lon",
@@ -345,7 +344,8 @@ thin_ocw2
 
 # get the file names...these should be all of our our bioclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
-files
+predictors<-stack(files)
+predictors #WC5 data, without waxbill
 mask <- raster(files[1]) #just sampling from 1 of the bioclim variables (since they are all from whole world)
 set.seed(1963) #makes sure we're generating random numbers
 
@@ -477,45 +477,45 @@ h2<-select07(suit5[,2:21],suit5[,1], family="gaussian",univar="glm",threshold=.7
 head(h2) #when waxbill is included, suggest bio1, 16, 18, 19 & Waxbill
 
 # Traditional PCA with each variable separate####
-head(envtrain)
-class(envtrain)
-z2<-prcomp(~bio1+bio2+bio3+bio4+bio5+bio6+bio7+bio8+bio9+bio10+bio11+bio12+bio13+bio14+bio15+bio16+bio17+bio18+bio19, data=envtrain, center=T, scale=T)
-?prcomp
-summary(z2) #prop. variance is similar to eigen value
-print(z2) #this function prints loadings for each PCA
-z2$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-z2$rotation #for EIGEN VECTORS
-plot(z2, type="l") #screeplot1
-screeplot(z2, type="l")  #screeplot2
-biplot(z2, cex=0.7) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-z3<- predict(z2) #make further predictions w/ PCA results
-z3 #matrix of PC values
-plot(z3[,1], z3[,2],xlim=c(-12,7), ylim=c(-12,7)) #plot the first two PCs, and make axes the same for each comparison of axes
-
-#More Examples of traditional PCA with raster stack converted to DF
-v1<-princomp(na.omit(values(envs)), cor=TRUE)
-plot(v1)
-varimax(v1$loadings[,1:4])
-
-?raster::predict 
-
-envs.df<-as.data.frame(envs)
-envs.df<-envs.df[,1:19]
-envs.df.no.na<-na.omit(envs.df)
-
-
-PCA<-prcomp(envs.df.no.na, center=T,scale=T)
-summary(PCA)
-print(PCA)
+#head(envtrain)
+#class(envtrain)
+#z2<-prcomp(~bio1+bio2+bio3+bio4+bio5+bio6+bio7+bio8+bio9+bio10+bio11+bio12+bio13+bio14+bio15+bio16+bio17+bio18+bio19, data=envtrain, center=T, scale=T)
+#summary(z2) #prop. variance is similar to eigen value
+#print(z2) #this function prints loadings for each PCA
+#z2$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+#z2$rotation #for EIGEN VECTORS
+#plot(z2, type="l") #screeplot1
+#screeplot(z2, type="l")  #screeplot2
+#biplot(z2, cex=0.7) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2) #make further predictions w/ PCA results
+#z3 #matrix of PC values
+#plot(z3[,1], z3[,2],xlim=c(-12,7), ylim=c(-12,7)) #plot the first two PCs, and make axes the same for each comparison of axes
 
 #Example from Hijmans for calculating PCA of Rasterstack
 #sr <- sampleRandom(envs.df, 1000) #could sample randomly of rasterbrick is too large
 pca <- prcomp(na.omit(values(envs)), scale=T, center=T)
-x <- predict(envs, pca, index=1:4) #so this should be (raster stack? df?) of 4 PCs...then put into maxEnt
-plot(x)
-class(x)
-?prcomp
+summary(pca) #prop. variance is similar to eigen value
+print(pca) #this function prints loadings for each PCA
+pca$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca$rotation #for EIGEN VECTORS
+plot(pca, type="l") #screeplot1
+screeplot(pca, type="l")  #screeplot2
+biplot(pca, cex=0.7) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+z3<- predict(z2) #
+z3 #matrix of PC values
+plot(z3[,1], z3[,2],xlim=c(-12,7), ylim=c(-12,7))
 
+x <- predict(envs, pca, index=1:4) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+
+
+#Try PCA without waxbills presence absence data incorporated
+#results are pretty much the same as with waxbills except axis 4!
+pca2 <- prcomp(na.omit(values(predictors)), scale=T, center=T)
+summary(pca2) #prop. variance is similar to eigen value
+print(pca2) #this function prints loadings for each PCA
+pca2$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca2$rotation #for EIGEN VECTORS
 
 #Preparing Host/Climate Rasters####
 
@@ -591,7 +591,7 @@ extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence po
 dim(train) #make sure our training set is the thinned set
 names(envs)
 mx <- maxent(envs,train,a=backg,factors="Common.Waxbill",args=c('betamultiplier=3',
-                ?'responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+                                                                ?'responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_pc<-maxent(pc_select,train,a=backg)
 
 #additional possible arguments for maxent:
