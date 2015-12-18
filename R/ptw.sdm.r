@@ -31,9 +31,9 @@ library(ecospat)
 #save(ptw, file="ptw.rdata")
 load("ptw.rdata")
 head(ptw)
+dim(ptw)
 ptw<-ptw[,c('lon','lat','country','species')]
 ptw<-subset(ptw, !is.na(lat) & !is.na(lon))
-ptw<-subset(ptw, lat%%1>0 & lon%% 1>0) #Why do we use this?
 head(ptw)
 ptw.unique<- distinct(select(ptw,lon,lat,country,species)) #remove duplicates
 dim(ptw.unique)
@@ -492,7 +492,7 @@ z3<- predict(z2) #make further predictions w/ PCA results
 z3 #matrix of PC values
 plot(z3[,1], z3[,2],xlim=c(-12,7), ylim=c(-12,7)) #plot the first two PCs, and make axes the same for each comparison of axes
 
-#More Traditional PCA with raster stack converted to DF
+#More Examples of traditional PCA with raster stack converted to DF
 v1<-princomp(na.omit(values(envs)), cor=TRUE)
 plot(v1)
 varimax(v1$loadings[,1:4])
@@ -514,6 +514,7 @@ pca <- prcomp(na.omit(values(envs)), scale=T, center=T)
 x <- predict(envs, pca, index=1:4) #so this should be (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(x)
 class(x)
+?prcomp
 
 
 #Preparing Host/Climate Rasters####
@@ -570,7 +571,6 @@ backg <- randomPoints(predictors, n=1000) #pull background points from specified
 #ext = extent(-90, -32, -33, 23) #to speed up how quickly everything processes, so limit our extent
 
 #SDM using MaxEnt (Hijmans/Elith)#####
-click() #tells us coordinates on map
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
 #envs<-crop(envs,north.america)
 
@@ -590,7 +590,8 @@ occs<-thin_ptw2_coords[,1:2] #lon/lat of thinned ptw points
 extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
 names(envs)
-mx <- maxent(envs,train,a=backg,factors="Common.Waxbill",args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx <- maxent(envs,train,a=backg,factors="Common.Waxbill",args=c('betamultiplier=3',
+                ?'responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_pc<-maxent(pc_select,train,a=backg)
 
 #additional possible arguments for maxent:
@@ -694,6 +695,14 @@ enmeval_results
 plot(enmeval_results@predictions[[which (enmeval_results@results$delta.AICc == 0) ]])
 points(enmeval_results@occ.pts, pch=21, bg=enmeval_results@occ.grp)
 head(enmeval_results@results)
+enmeval_results@results #all the results
+Q<-enmeval_results@results#arrange by AICc value
+QQ<-as.data.frame(Q)
+head(QQ)
+QQ<-QQ[,c(1,2,3,14)]
+head(QQ)
+arrange(QQ,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
+#Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
 enmeval_results@overlap
 
 par(mfrow=c(2,2))
