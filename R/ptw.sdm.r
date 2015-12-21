@@ -510,6 +510,7 @@ print(pca_bioclim_only) #this function prints loadings for each PCA
 pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
 pca_bioclim_only$rotation #for EIGEN VECTORS
 pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
+pca2_bioclim_only$rotation #for EIGEN VECTORS
 
 #Preparing Host/Climate Rasters####
 #Function for Presence/Absence Rasters for Host Species by Amy Whitehead
@@ -708,6 +709,7 @@ p<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black")
 
+<<<<<<< HEAD
 #MaxEnt for Whydah PCA No Host####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
