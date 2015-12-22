@@ -508,9 +508,18 @@ pca_bioclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
 summary(pca_bioclim_only) #prop. variance is similar to eigen value
 print(pca_bioclim_only) #this function prints loadings for each PCA
 pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+<<<<<<< HEAD
 pca_bioclim_only$rotation #for EIGEN VECTORS
 pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
 pca2_bioclim_only$rotation #for EIGEN VECTORS
+=======
+<<<<<<< HEAD
+pca_bioclim_only$rotation #for EIGEN VECTORS
+pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
+=======
+pca2_bioclim_only$rotation #for EIGEN VECTORS
+>>>>>>> 2185184c6ffb345fbe0cd096a41f248d57023090
+>>>>>>> ff9014a3bb28f68eacbe5895331e0316af763d93
 
 #Preparing Host/Climate Rasters####
 #Function for Presence/Absence Rasters for Host Species by Amy Whitehead
@@ -972,8 +981,17 @@ enmeval_results@results
 #ENMeval for cropped rasterstak
 enmeval_results_cropped <- ENMevaluate(thin_ptw2_coords, backg_cropped, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
+<<<<<<< HEAD
 #ENMeval for PCA results
 enmeval_results_pca_bioclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_bioclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
+=======
+<<<<<<< HEAD
+#ENMeval for PCA results
+enmeval_results_pca_bioclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_bioclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+
+=======
+>>>>>>> 2185184c6ffb345fbe0cd096a41f248d57023090
+>>>>>>> ff9014a3bb28f68eacbe5895331e0316af763d93
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
