@@ -981,17 +981,11 @@ enmeval_results@results
 #ENMeval for cropped rasterstak
 enmeval_results_cropped <- ENMevaluate(thin_ptw2_coords, backg_cropped, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
-<<<<<<< HEAD
 #ENMeval for PCA results
 enmeval_results_pca_bioclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_bioclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
-=======
-<<<<<<< HEAD
 #ENMeval for PCA results
 enmeval_results_pca_bioclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_bioclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
-=======
->>>>>>> 2185184c6ffb345fbe0cd096a41f248d57023090
->>>>>>> ff9014a3bb28f68eacbe5895331e0316af763d93
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
