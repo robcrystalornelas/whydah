@@ -2,7 +2,7 @@
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 setwd("~/Desktop/Whydah Project/whydah/Data")
-load("~/Desktop/Whydah Project/whydah/whydah_workspace.RData")
+#load("~/Desktop/Whydah Project/whydah/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
 Sys.setenv(NOAWT=TRUE)
 library(rJava)
@@ -330,6 +330,103 @@ write.SpThin(
 thin_cw2<-read.csv("thin_0001.csv", head=T)
 head(thin_cw2)
 
+#Nutmeg Mannakin
+#nutmeg<-gbif('Lonchura', 'punctulata', geo=T, removeZeros = T)
+save(nutmeg, file="nutmeg.rdata")
+load("nutmeg.rdata")
+head(nutmeg)
+dim(nutmeg)
+
+nutmeg<-nutmeg[,c('lon','lat','country','species')]
+nutmeg<-subset(nutmeg, !is.na(lat) & !is.na(lon))
+head(nutmeg)
+nutmeg.unique<- distinct(select(nutmeg,lon,lat,country,species)) #remove duplicates
+dim(nutmeg.unique)
+head(nutmeg.unique)
+
+#Removing outliers by country
+plot(wrld_simpl)
+points(nutmeg.unique, col="red")
+
+unique(nutmeg.unique$country)
+nutmeg.unique<-filter(nutmeg.unique, country !="Canada") #Remove Canada
+nutmeg.unique<-filter(nutmeg.unique, country !="Honduras") #Remove Honduras
+unique(nutmeg.unique$country)
+
+#Remove outliers by lon/lat...for nutmegs these include museum speciments and acoustic labs in US
+#click()
+points(-94, 38, col='green') #This is acoustic lab point
+which(nutmeg.unique$lon == -94, nutmeg.unique$lat== 38) #find it in the data.frame
+nutmeg.unique<- nutmeg.unique[-9269,] #remove that row!
+
+filter(nutmeg.unique, lon>(-90) & lat>(40) & country=="United States") #find midwest points
+points(-83.13383, 42.68063,col="green") #make sure it's the right one
+which(nutmeg.unique$lon == -83.13383, nutmeg.unique$lat== 42.68063) #find it in the data.frame
+nutmeg.unique<- nutmeg.unique[-8057,] #remove that row!
+points(-83.72634, 42.27084,col="green") #make sure it's the right one
+which(nutmeg.unique$lon == -83.72634, nutmeg.unique$lat== 42.27084) #find it in the data.frame
+nutmeg.unique<- nutmeg.unique[-8857,] #remove that row!
+
+filter(nutmeg.unique, lon>(-90) & lat>(38) & country=="United States") #last midwest point
+points(-83.0189, 39.9961,col="green")
+which(nutmeg.unique$lon == -83.0189, nutmeg.unique$lat== 39.9961) #find it in the data.frame
+nutmeg.unique<- nutmeg.unique[-9114,] #remove that row!
+
+#re-check points for more outliers
+plot(wrld_simpl)
+points(nutmeg.unique, col="red")
+
+#only complete cases
+nutmeg.unique<-nutmeg.unique[complete.cases(nutmeg.unique),]
+dim(nutmeg.unique)
+
+
+#checking for any zero values
+lonzero = subset(nutmeg.unique, lon==0) #any points have longitude that was auto-set to 0
+lonzero
+which(duplicated(nutmeg.unique)==TRUE) #any duplicates?
+
+coordinates(nutmeg.unique) <- ~lon+lat
+crs(nutmeg.unique) <- crs(countries)
+class(nutmeg.unique)
+ovr <- over(nutmeg.unique, countries)
+cntr <- ovr$NAME
+i <- which(is.na(cntr))
+i
+j <- which(cntr != nutmeg.unique$country)
+j
+cbind(cntr, nutmeg.unique$country)[j,]
+plot(nutmeg.unique)
+plot(wrld_simpl, add=T, border= "blue" , lwd=1)
+points(nutmeg.unique[j, ], col="red" , pch=20, cex=.75)
+
+#Thin Nutmeg ####
+setwd("~/Desktop/Whydah Project/whydah/Output")
+crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+
+thin_nutmeg <-spThin(
+  nutmeg.unique, 
+  x.col = "lon",
+  y.col = "lat",
+  dist = 10000,
+  method= "gurobi",
+  great.circle.distance=TRUE)
+summary(thin_nutmeg)
+str(thin_nutmeg)
+plot(thin_nutmeg)
+
+#Saving the thinned file
+print(tempdir())
+write.SpThin(
+  thin_nutmeg,
+  coords=FALSE,
+  dir=tempdir()
+)
+
+#can elect to read in .csv of all thinned points
+thin_nutmeg2<-read.csv("thin_0001.csv", head=T)
+head(thin_nutmeg2) #Always check to make sure this shows correct species
+
 #Back to data directory one more time
 setwd("~/Desktop/Whydah Project/whydah/Data")
 
@@ -338,9 +435,9 @@ setwd("~/Desktop/Whydah Project/whydah/Data")
 thin_ptw2
 thin_cw2
 thin_ocw2
+thin_nutmeg2
 
 #Environmental Variables####
-
 # get the file names...these should be all of our our bioclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
 predictors<-stack(files)
