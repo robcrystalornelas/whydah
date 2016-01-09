@@ -522,6 +522,21 @@ pca_predictions_nutmeg <- na.omit(predict(predictors_nutmeg, pca_nutmeg, index=1
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_nutmeg[,1], pca_predictions_nutmeg[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
+#PCA for OCW AND CW Predictors 
+pca_ocw_and_cw <- prcomp(na.omit(values(predictors_ocw_and_cw)), scale=T, center=T)
+summary(pca_ocw_and_cw) #prop. variance is similar to eigen value
+print(pca_ocw_and_cw) #this function prints loadings for each PCA
+pca_ocw_and_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_ocw_and_cw$rotation #for EIGEN VECTORS
+plot(pca_ocw_and_cw, type="l") #screeplot1
+screeplot(pca_ocw_and_cw, type="l")  #screeplot2
+biplot(pca_ocw_and_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_ocw_and_cw <- na.omit(predict(predictors_ocw_and_cw, pca_ocw_and_cw, index=1:5)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_ocw_and_cw[,1], pca_predictions_ocw_and_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
+
 #PCA with just bioclim
 #results are pretty much the same as with waxbills except axis 4!
 pca_bioclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
@@ -594,6 +609,7 @@ predictors_no_host<-stack(files)
 predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & waxbill presence/absence
 predictors_ocw<-stack(files, pa_raster_ocw)
 predictors_nutmeg<-stack(files, pa_raster_nutmeg)
+predictors_ocw_and_cw<-stack(files, pa_raster_cw,pa_raster_ocw)
 plot(predictors_cw)
 plot(predictors_ocw)
 
@@ -661,6 +677,7 @@ df_cw <- data.frame(map.cw) #convert to data.frame
 head(df_cw)
 colnames(df_cw) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_cw$Suitability)
 
 #Now make the map
 p<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
@@ -681,7 +698,7 @@ p<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.9))
+                         na.value = "black",limits=c(0,.75))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
 
@@ -721,6 +738,7 @@ df_ocw_pca <- data.frame(map.ocw.pca) #convert to data.frame
 head(df_ocw_pca)
 colnames(df_ocw_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_ocw_pca$Suitability)
 
 #Now make the map
 p<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
@@ -741,7 +759,7 @@ p<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.9))
+                         na.value = "black", limits=c(0,.75))
 
 #MaxEnt for Whydah with Nutmeg and PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -798,7 +816,66 @@ p<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.9))
+                         na.value = "black", limits=c(0,.75))
+
+#MaxEnt for Whydah with OCW AND CW####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_ocw_and_cw_pca <- maxent(pca_predictions_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+response(mx_ocw_and_cw_pca) #response curves
+plot(mx_ocw_and_cw_pca) #importance of each variable in building model
+
+#Model Evaluation
+e_ocw_and_cw_pca <- evaluate(test, backg_test, mx_ocw_and_cw_pca, pca_predictions_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_ocw_and_cw_pca #shows number of presences/absences/AUC and cor
+px_ocw_and_cw_pca <- predict(pca_predictions_ocw_and_cw, mx_ocw_and_cw_pca, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_ocw_and_cw_pca, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_ocw_and_cw_pca <- threshold(e_ocw_and_cw_pca, 'spec_sens' )
+plot(px_ocw_and_cw_pca > tr_ocw_and_cw_pca, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_ocw_and_cw_pca, 'ROC')
+
+#Plotting Maxent output
+map.ocw.and.cw.pca <- rasterToPoints(px_ocw_and_cw_pca) #make predictions raster a set of points for ggplot
+df_ocw_and_cw_pca <- data.frame(map.ocw.and.cw.pca) #convert to data.frame
+head(df_ocw_and_cw_pca)
+colnames(df_ocw_and_cw_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_ocw_and_cw_pca$Suitability)
+
+#Now make the map
+p<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith Native Hosts & PCA") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black", limits=c(0,.75)) +
+  #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
+  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
 
 #MaxEnt for Whydah PCA No Host####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -835,6 +912,7 @@ df_pca_bio_only <- data.frame(map.pca.bio.only) #convert to data.frame
 head(df_pca_bio_only)
 colnames(df_pca_bio_only) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_pca_bio_only$Suitability)
 
 #Now make the map
 p<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
@@ -855,7 +933,7 @@ p<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.9))
+                         na.value = "black", limits=c(0,.75))
 
 #MaxEnt  for Whydah - No Host species / all bioclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -893,6 +971,7 @@ df_no_host <- data.frame(map.no.host) #convert to data.frame
 head(df_no_host)
 colnames(df_no_host) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_no_host$Suitability)
 
 #Now make the map
 p<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
@@ -913,10 +992,10 @@ p<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.9))
+                         na.value = "black",limits=c(0,.75))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
-#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.9)) #this one works!
+#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.75)) #this one works!
 
 #MaxEnt for Whydah with OCW and ALL BIOCLIM####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -952,6 +1031,7 @@ df_ocw_all_bioclim <- data.frame(map.ocw.all.bioclim) #convert to data.frame
 head(df_ocw_all_bioclim)
 colnames(df_ocw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_ocw_all_bioclim$Suitability)
 
 p<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -971,7 +1051,7 @@ p<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.9))
+                         na.value = "black",limits=c(0,.75))
 
 #MaxEnt for Whydah with Common Waxbill and ALL BIOCLIM####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -1007,6 +1087,7 @@ df_cw_all_bioclim <- data.frame(map.cw.all.bioclim) #convert to data.frame
 head(df_cw_all_bioclim)
 colnames(df_cw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_cw_all_bioclim$Suitability)
 
 p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -1026,7 +1107,7 @@ p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.9))
+                         na.value = "black",limits=c(0,.75))
 
 #MaxEnt for Whydah with Nutmeg Mannikin and ALL BIOCLIM####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -1062,6 +1143,7 @@ df_nutmeg_all_bioclim <- data.frame(map.nutmeg.all.bioclim) #convert to data.fra
 head(df_nutmeg_all_bioclim)
 colnames(df_nutmeg_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
+max(df_nutmeg_all_bioclim$Suitability)
 
 p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -1081,7 +1163,7 @@ p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.9))
+                         na.value = "black",limits=c(0,.75))
 
 ###ENMeval###
 #enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
