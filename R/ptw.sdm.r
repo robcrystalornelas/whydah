@@ -453,97 +453,6 @@ plot(e, add=TRUE, col= 'red')
 points(bg2, cex=0.5)
 
 #Different Methods for PCA####
-
-# Select07 From Dormann et al. 2012
-select07 <- function(X, y, family="binomial", univar="gam", threshold=0.7,
-                     method="pearson", sequence=NULL, ...){
-  
-  #.7 is recommended for threshold by Fielding and Haworth 1995
-  #if data is bi-variate normal stick with pearson for method, otherwise go "spearman"
-  #sequence can be used to specify the order of predictor variable importance
-  
-  #From Dormann:
-  # selects variables based on removing correlations > 0.7, retaining those
-  # variables more important with respect to y
-  # when a sequence is given, this will be used instead (Damaris)
-  # 1. step: cor-matrix
-  # 2. step: importance vector
-  # 3. step: identify correlated pairs
-  # 4. step: remove less important from pairs
-  #get rid of it II: seqreg, select07,maxspan
-  # written by Carsten F. Dormann;
-  # last changed by Tamara Münkemüller and Damaris Zurell, 12.12.2007
-  # last changed by Damaris Zurell, 19.12.2008
-  var.imp <- function (variable, response, univar=univar, family="gaussian"){
-    # calculates the univariate (=marginal) importance of a variable for a response
-    if (!univar %in% c("glm", "gam")) stop("Invalid univariate screening method:
-                                           choose 'glm' or 'gam' (default).")
-    if (univar=="glm"){
-      fm.glm <- glm(response ~ variable, family=family)
-      summary(fm.glm)$aic
-    } else {
-      fm.gam <- gam(response ~ s(variable, ...), family=family)
-      AIC(fm.gam)
-    }
-  }
-  cm <- cor(X, method=method)
-  pairs <- which(abs(cm)>= threshold, arr.ind=T) # identifies correlated variable pairs
-  index <- which(pairs[,1]==pairs[,2]) # removes entry on diagonal
-  pairs <- pairs[-index,] # -"-
-  exclude <- NULL
-  if (NROW(pairs)!=0)
-  {
-    if (is.null(sequence)) {
-      #importance as AIC: the lower the better!
-      imp <- apply(X, 2, var.imp, response=y, family=family, univar=univar)
-      for (i in 1:NROW(pairs))
-      {
-        a <- imp[rownames(cm)[pairs[i,1]]]
-        b <- imp[rownames(cm)[pairs[i,2]]]
-        exclude <- c(exclude, ifelse(a>b, names(a), names(b)))
-      }
-    } else {
-      for (i in 1:NROW(pairs))
-      {
-        a <- which(pairs[i,1]==sequence)
-        b <- which(pairs[i,2]==sequence)
-        exclude <- c(exclude, ifelse(a>b, rownames(cm)[pairs[i,1]],
-                                     rownames(cm)[pairs[i,2]]))
-      }
-    }
-  }
-  X <- X[,!(colnames(X) %in% unique(exclude)),drop=F]
-  return(X)
-  }
-#select07(X=LE, y=LanExc12[,"c"], family="binomial", threshold=0.7,method="spearman")[1:10,]
-formula.maker <- function(dataframe, y.col=1, quadratic=TRUE, interactions=TRUE) {
-  # makes a formula for GLM from dataframe column names,
-  # including quadratic effects and first-order interactions
-  # by default, first column is taken to be the response (y); else, an integer giving the column with the response in "dataframe"
-  # by Carsten F. Dormann
-  if (quadratic && interactions) {
-    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ (",
-                          paste(colnames(dataframe[,-y.col]), collapse=" + ", sep=""), ")^2 + ", paste("I(",
-                                                                                                       colnames(dataframe[,-y.col]), "^2)", collapse="+", sep="")))
-  }
-  if (quadratic & !interactions){
-    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ (",
-                          paste(colnames(dataframe[,-y.col]), collapse=" + ", sep=""), ") + ", paste("I(",
-                                                                                                     colnames(dataframe[,-y.col]), "^2)", collapse="+", sep="")))
-  }
-  if (!quadratic & !interactions){
-    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ ", paste(colnames(dataframe[,
-                                                                                      -y.col]), collapse=" + ", sep="") ))
-  }
-  if (!quadratic & interactions){
-    f <- as.formula(paste(colnames(dataframe)[y.col], " ~ (",
-                          paste(colnames(dataframe[,-y.col]), collapse=" + ", sep=""), ")^2"))
-    # + ", paste("I(", colnames(dataframe[,-1]), "^2)", collapse="+", sep="")))
-  }
-  f
-}
-
-
 head(envtrain)
 envtrain.just.bioclim<-envtrain[,3:21]
 envtrain.all<-envtrain[,3:22]
@@ -599,24 +508,32 @@ pca_predictions_ocw <- na.omit(predict(predictors_ocw, pca_ocw, index=1:4)) #mak
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_ocw[,1], pca_predictions_ocw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
+#PCA for Nutmeg Predictors
+pca_nutmeg <- prcomp(na.omit(values(predictors_nutmeg)), scale=T, center=T)
+summary(pca_nutmeg) #prop. variance is similar to eigen value
+print(pca_nutmeg) #this function prints loadings for each PCA
+pca_nutmeg$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_nutmeg$rotation #for EIGEN VECTORS
+plot(pca_nutmeg, type="l") #screeplot1
+screeplot(pca_nutmeg, type="l")  #screeplot2
+biplot(pca_nutmeg, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_nutmeg <- na.omit(predict(predictors_nutmeg, pca_nutmeg, index=1:4)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_nutmeg[,1], pca_predictions_nutmeg[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
 #PCA with just bioclim
 #results are pretty much the same as with waxbills except axis 4!
 pca_bioclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
 summary(pca_bioclim_only) #prop. variance is similar to eigen value
 print(pca_bioclim_only) #this function prints loadings for each PCA
 pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-<<<<<<< HEAD
 pca_bioclim_only$rotation #for EIGEN VECTORS
 pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
 pca2_bioclim_only$rotation #for EIGEN VECTORS
-=======
-<<<<<<< HEAD
 pca_bioclim_only$rotation #for EIGEN VECTORS
 pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
-=======
 pca2_bioclim_only$rotation #for EIGEN VECTORS
->>>>>>> 2185184c6ffb345fbe0cd096a41f248d57023090
->>>>>>> ff9014a3bb28f68eacbe5895331e0316af763d93
 
 #Preparing Host/Climate Rasters####
 #Function for Presence/Absence Rasters for Host Species by Amy Whitehead
@@ -659,11 +576,24 @@ pa_raster_ocw <- presence.absence.raster(mask.raster=myRaster, species.data=thin
 pa_raster_ocw
 plot(pa_raster_ocw, main="Orance Cheeked Waxbill Presence/Absence Raster File")
 
+#P/A Raster for Nutmeg
+species <- "Nutmeg Mannikin"
+thin_nutmeg2<-thin_nutmeg2[,1:2] #prepare only lat/lon data for pres/absence
+# read in a raster of the world
+setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
+myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
+
+# create presence absence raster for Common Waxbills using pre-made function
+pa_raster_nutmeg <- presence.absence.raster(mask.raster=myRaster, species.data=thin_nutmeg2, raster.label=species)
+pa_raster_nutmeg
+plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
+
 #Now, onto bioclim data
 files #here are all climate files
 predictors_no_host<-stack(files)
 predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & waxbill presence/absence
 predictors_ocw<-stack(files, pa_raster_ocw)
+predictors_nutmeg<-stack(files, pa_raster_nutmeg)
 plot(predictors_cw)
 plot(predictors_ocw)
 
@@ -696,7 +626,7 @@ train<-train[,1:2]
 test<-test[,1:2]
 head(train) #just has lon/lat
 
-#MaxEnt  for Whydah with CW and PCA####
+#MaxEnt for Whydah with CW and PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
@@ -751,14 +681,12 @@ p<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
+                         na.value = "black",limits=c(0,.9))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
-?scale_fill_gradientn
-#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.9)) #this one works!
-scale_fill_brewer(palette = "PRGn") #didn't work because data sent over must be discrete
 
-#MaxEnt  for Whydah with OCW and PCA####
+
+#MaxEnt for Whydah with OCW and PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
@@ -813,9 +741,65 @@ p<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
+                         na.value = "black", limits=c(0,.9))
 
-<<<<<<< HEAD
+#MaxEnt for Whydah with Nutmeg and PCA####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_nutmeg_pca <- maxent(pca_predictions_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+response(mx_nutmeg_pca) #response curves
+plot(mx_nutmeg_pca) #importance of each variable in building model
+
+#Model Evaluation
+e_nutmeg <- evaluate(test, backg_test, mx_nutmeg_pca, pca_predictions_nutmeg) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_nutmeg #shows number of presences/absences/AUC and cor
+px_nutmeg_pca <- predict(pca_predictions_nutmeg, mx_nutmeg_pca, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_nutmeg_pca, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_nutmeg_pca <- threshold(e_nutmeg, 'spec_sens' )
+plot(px_nutmeg_pca > tr_nutmeg_pca, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_nutmeg, 'ROC')
+
+#Plotting Maxent output
+map.nutmeg.pca <- rasterToPoints(px_nutmeg_pca) #make predictions raster a set of points for ggplot
+df_nutmeg_pca <- data.frame(map.nutmeg.pca) #convert to data.frame
+head(df_nutmeg_pca)
+colnames(df_nutmeg_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_nutmeg_pca$Suitability) #The max suitability score is only .579
+
+#Now make the map
+p<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith Nutmeg Mannikin & PCA") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black", limits=c(0,.9))
+
 #MaxEnt for Whydah PCA No Host####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
@@ -871,7 +855,7 @@ p<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
+                         na.value = "black", limits=c(0,.9))
 
 #MaxEnt  for Whydah - No Host species / all bioclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -929,7 +913,7 @@ p<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
+                         na.value = "black",limits=c(0,.9))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
 #scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.9)) #this one works!
@@ -987,7 +971,7 @@ p<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
+                         na.value = "black",limits=c(0,.9))
 
 #MaxEnt for Whydah with Common Waxbill and ALL BIOCLIM####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -1042,7 +1026,62 @@ p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black")
+                         na.value = "black",limits=c(0,.9))
+
+#MaxEnt for Whydah with Nutmeg Mannikin and ALL BIOCLIM####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_nutmeg_all_bioclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+response(mx_nutmeg_all_bioclim) #response curves
+plot(mx_nutmeg_all_bioclim) #importance of each variable in building model
+
+#Model Evaluation 
+e_nutmeg_all_bioclim <- evaluate(test, backg_test, mx_nutmeg_all_bioclim, predictors_nutmeg) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_nutmeg_all_bioclim #shows number of presences/absences/AUC and cor
+px_nutmeg_all_bioclim <- predict(predictors_nutmeg, mx_nutmeg_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_nutmeg_all_bioclim, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_nutmeg_all_bioclim <- threshold(e_nutmeg_all_bioclim, 'spec_sens' )
+plot(px_nutmeg_all_bioclim > tr_nutmeg_all_bioclim, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_nutmeg_all_bioclim, 'ROC')
+
+#Plotting Maxent output
+map.nutmeg.all.bioclim <- rasterToPoints(px_nutmeg_all_bioclim) #make predictions raster a set of points for ggplot
+df_nutmeg_all_bioclim <- data.frame(map.nutmeg.all.bioclim) #convert to data.frame
+head(df_nutmeg_all_bioclim)
+colnames(df_nutmeg_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+
+p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith CW & All 19 Bioclim") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black",limits=c(0,.9))
 
 ###ENMeval###
 #enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
