@@ -614,7 +614,7 @@ plot(predictors_cw)
 plot(predictors_ocw)
 
 #background points
-backg <- randomPoints(predictors_no_host, n=1000, ext = (extent(-119, 55.4539,-33,23)), extf=1.25) #pull background points from specified extent
+backg <- randomPoints(predictors_no_host, n=4000, ext = (extent(-119, 55.4539,-33,23)), extf=1.25) #pull background points from specified extent
 #From occurrence records...bounding box is. y (lat) min = -34.8324, ymax=41.526  /  x (lon) min = -118.808, xmax = 55.4539
 #ext = extent(-90, -32, -33, 23) #to speed up how quickly everything processes, so limit our extent
 #Format for extent is (xmin,xmax,ymin,ymax)
@@ -1164,6 +1164,63 @@ p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
   )
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
+
+#MaxEnt for Whydah with OCW AND CW and ALL BIOCLIM####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_ocw_and_cw_all_bioclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+response(mx_ocw_and_cw_all_bioclim) #response curves
+plot(mx_ocw_and_cw_all_bioclim) #importance of each variable in building model
+
+#Model Evaluation 
+e_ocw_and_cw_all_bioclim <- evaluate(test, backg_test, mx_ocw_and_cw_all_bioclim, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_ocw_and_cw_all_bioclim #shows number of presences/absences/AUC and cor
+px_ocw_and_cw_all_bioclim <- predict(predictors_ocw_and_cw, mx_ocw_and_cw_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_ocw_and_cw_all_bioclim, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_ocw_and_cw_all_bioclim <- threshold(e_ocw_and_cw_all_bioclim, 'spec_sens' )
+plot(px_ocw_and_cw_all_bioclim > tr_ocw_and_cw_all_bioclim, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_ocw_and_cw_all_bioclim, 'ROC')
+
+#Plotting Maxent output
+map.ocw.and.cw.all.bioclim <- rasterToPoints(px_ocw_and_cw_all_bioclim) #make predictions raster a set of points for ggplot
+df_ocw_and_cw_all_bioclim <- data.frame(map.ocw.and.cw.all.bioclim) #convert to data.frame
+head(df_ocw_and_cw_all_bioclim)
+colnames(df_ocw_and_cw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_ocw_and_cw_all_bioclim$Suitability)
+
+p<-ggplot(data=df_ocw_and_cw_all_bioclim, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith OCW and CW & All 19 Bioclim") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black",limits=c(0,.75))
+
 
 ###ENMeval###
 #enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
