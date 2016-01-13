@@ -591,10 +591,6 @@ print(pca_bioclim_only) #this function prints loadings for each PCA
 pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
 pca_bioclim_only$rotation #for EIGEN VECTORS
 pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
-pca2_bioclim_only$rotation #for EIGEN VECTORS
-pca_bioclim_only$rotation #for EIGEN VECTORS
-pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
-pca2_bioclim_only$rotation #for EIGEN VECTORS
 
 #SDMs using MaxEnt#####
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
@@ -606,6 +602,64 @@ test<-thin_ptw2_coords[folds==1,] #testing has 25% of points
 train<-train[,1:2]
 test<-test[,1:2]
 head(train) #just has lon/lat
+
+#MaxEnt for Whydah No Host PCA####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_pca_only <- maxent(pca_predictions_bioclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+response(mx_pca_only) #response curves
+plot(mx_pca_only) #importance of each variable in building model
+
+#Model Evaluation
+e_pca_bio_only <- evaluate(test, backg_test, mx_pca_only, pca_predictions_bioclim_only) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_pca_bio_only #shows number of presences/absences/AUC and cor
+px_pca_bio_only <- predict(pca_predictions_bioclim_only, mx_pca_only, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_pca_bio_only, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_pca_bio_only <- threshold(e_pca_bio_only, 'spec_sens' )
+plot(px_pca_bio_only > tr_pca_bio_only, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_pca_bio_only, 'ROC')
+
+#Plotting Maxent output
+map.pca.bio.only <- rasterToPoints(px_pca_bio_only) #make predictions raster a set of points for ggplot
+df_pca_bio_only <- data.frame(map.pca.bio.only) #convert to data.frame
+head(df_pca_bio_only)
+colnames(df_pca_bio_only) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_pca_bio_only$Suitability)
+
+#Now make the map
+p_no_host_PCA<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith No Hosts and PCA") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                     na.value = "black", limits=c(0,.75))
 
 #MaxEnt for Whydah with CW and PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -842,64 +896,6 @@ p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1",
   #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
 
-#MaxEnt for Whydah PCA No Host####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_bioclim_only <- maxent(pca_predictions_bioclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
-response(mx_bioclim_only) #response curves
-plot(mx_bioclim_only) #importance of each variable in building model
-
-#Model Evaluation
-e_pca_bio_only <- evaluate(test, backg_test, mx_bioclim_only, pca_predictions_bioclim_only) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_pca_bio_only #shows number of presences/absences/AUC and cor
-px_pca_bio_only <- predict(pca_predictions_bioclim_only, mx_bioclim_only, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
-par(mfrow=c(1,2))
-plot(px_pca_bio_only, main= 'Maxent, raw values')
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
-points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_pca_bio_only <- threshold(e_pca_bio_only, 'spec_sens' )
-plot(px_pca_bio_only > tr_pca_bio_only, main='presence/absence')
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-points(train, pch= '+')
-plot(e_pca_bio_only, 'ROC')
-
-#Plotting Maxent output
-map.pca.bio.only <- rasterToPoints(px_pca_bio_only) #make predictions raster a set of points for ggplot
-df_pca_bio_only <- data.frame(map.pca.bio.only) #convert to data.frame
-head(df_pca_bio_only)
-colnames(df_pca_bio_only) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-head(thin_ptw2_coords)
-max(df_pca_bio_only$Suitability)
-
-#Now make the map
-p_no_host_PCA<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
-  geom_raster(aes(fill=Suitability)) +
-  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
-  theme_bw() +
-  coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith No Hosts and PCA") +
-  theme(axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16, angle=90),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        plot.title = element_text(face="bold", size=20),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = 'right',
-        legend.key = element_blank(),
-        panel.background = element_rect(fill = 'black')
-  )
-p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.75))
-
 #MaxEnt  for Whydah - No Host species / all bioclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
@@ -928,7 +924,6 @@ plot(px_no_host > tr_no_host, main='presence/absence')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
 plot(e_no_host, 'ROC')
-?maxent
 
 #Plotting Maxent output
 map.no.host <- rasterToPoints(px_no_host) #make predictions raster a set of points for ggplot
@@ -939,7 +934,7 @@ head(thin_ptw2_coords)
 max(df_no_host$Suitability)
 
 #Now make the map
-p_no_host_all_bioclim<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
+p_no_host_all_bioclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
@@ -979,7 +974,6 @@ plot(mx_ocw_all_bioclim) #importance of each variable in building model
 e_ocw_all_bioclim <- evaluate(test, backg_test, mx_ocw_all_bioclim, predictors_ocw) #evalute test points, pseudo-absences (random background points), the model and predictors
 e_ocw_all_bioclim #shows number of presences/absences/AUC and cor
 px_ocw_all_bioclim <- predict(predictors_ocw, mx_ocw_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
-par(mfrow=c(1,2))
 plot(px_ocw_all_bioclim, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
