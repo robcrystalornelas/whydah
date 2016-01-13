@@ -2,7 +2,7 @@
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 setwd("~/Desktop/Whydah Project/whydah/Data")
-#load("~/Desktop/Whydah Project/whydah/whydah_workspace.RData")
+load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
 Sys.setenv(NOAWT=TRUE)
 library(rJava)
@@ -38,11 +38,11 @@ ptw.unique<- distinct(select(ptw,lon,lat,country,species)) #remove duplicates
 dim(ptw.unique)
 head(ptw.unique)
 
-#Removing outliers
+# Removing outliers
 unique(ptw.unique$country) #Remove Taiwan Whydahs
 ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.
-#From many years ago, and not over a consistent amount of years
-click()
+# From many years ago, and not over a consistent amount of years
+# click()
 filter(ptw.unique, lon<(-80) & lat>30 & country=="United States") #find Chicago point
 which(ptw.unique$lon == -82.9989, ptw.unique$lat== 39.96110) #find it in the data.frame
 ptw.unique<- ptw.unique[-4493,] #remove that row!
@@ -51,49 +51,47 @@ filter(ptw.unique, lon<(-122) & lat>35 & country=="United States") #find San Fra
 which(ptw.unique$lon == -122.511, ptw.unique$lat== 37.7777)
 ptw.unique<-ptw.unique[-1312,] #remove san fran point
 
-#only complete cases
+# only complete cases
 ptw.unique<-ptw.unique[complete.cases(ptw.unique),]
 dim(ptw.unique)
 is.na(ptw.unique) #no NAs in df
 
-#check map
+# check map
+data("wrld_simpl")
 plot(wrld_simpl)
 points(ptw.unique, col="red")
 dim(ptw.unique)
 
-#Clean/Organize Data####
+# Clean/Organize Data####
 lonzero = subset(ptw.unique, lon==0) #any points have longitude that was auto-set to 0
 lonzero #All OK
 duplicated(ptw.unique) #any duplicates?
 
-#cross checking our occurence points by means of a spatial query####
-#countries<-getData("countries") #maps we used in this exercise were a bit crude, so can use
-#this function to get highly detailed maps
-#these lines of code will create object "over" that shows all countries where our
-#points fall
-coordinates(ptw.unique) <- ~lon+lat
-crs(ptw.unique) <- crs(countries)
-class(ptw.unique)
-ovr <- over(ptw.unique, countries)
-cntr <- ovr$NAME #if we see any NAs, that means they're mapped to the ocean
-#AND which countires are recorded here, that are different from their record included in GBIF
-i <- which(is.na(cntr))
-i #When I switched to "countries" dataset, didn't lose any points
-j <- which(cntr != ptw.unique$country) #this asks which of our counties, doesn't align w/ GBIFs countires
-j
+# cross checking our occurence points by means of a spatial query####
+# countries<-getData("countries") #maps we used in this exercise were a bit crude, so can use
+# this function to get highly detailed maps
+# these lines of code will create object "over" that shows all countries where our
+# points fall
+# coordinates(ptw.unique) <- ~lon+lat
+# crs(ptw.unique) <- crs(countries)
+# class(ptw.unique)
+# ovr <- over(ptw.unique, countries)
+# cntr <- ovr$NAME #if we see any NAs, that means they're mapped to the ocean
+# AND which countires are recorded here, that are different from their record included in GBIF
+# i <- which(is.na(cntr))
+# i #When I switched to "countries" dataset, didn't lose any points
+# j <- which(cntr != ptw.unique$country) #this asks which of our counties, doesn't align w/ GBIFs countires
+# j
 # for the mismatches, bind the country names of the polygons and points
-cbind(cntr, ptw.unique$country)[j,] #here's all the spots we have mismatches
-plot(ptw.unique)
+# cbind(cntr, ptw.unique$country)[j,] #here's all the spots we have mismatches
+# plot(wrld_simpl, add=T, border= "blue" , lwd=1)
+# points(ptw.unique[j, ], col="red" , pch=20, cex=.75)
 
-data("wrld_simpl")
-plot(wrld_simpl, add=T, border= "blue" , lwd=1)
-points(ptw.unique[j, ], col="red" , pch=20, cex=.75)
-
-#spThin####
+# spThin####
 setwd("~/Desktop/Whydah Project/whydah/Output") #running from mac
 # set coordinate system
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-#then spThin!
+# then spThin!
 thin1 <-spThin(
   ptw.unique, 
   x.col = "lon",
@@ -104,11 +102,11 @@ thin1 <-spThin(
 summary(thin1)
 str(thin1)
 plot(thin1) #to visualize which records we kept after thinning
-#hexagons show the distribution of all the occurrence records and the 
-#red points show the location of the retained records.
+# hexagons show the distribution of all the occurrence records and the 
+# red points show the location of the retained records.
 thin1@call
 
-#Saving the thinned file####
+# Saving the thinned file####
 # print temporary dir
 print(tempdir())
 write.SpThin(
@@ -206,19 +204,20 @@ lonzero = subset(ocw.unique, lon==0) #any points have longitude that was auto-se
 lonzero
 duplicated(ocw.unique) #any duplicates?
 
-coordinates(ocw.unique) <- ~lon+lat
-crs(ocw.unique) <- crs(countries)
-class(ocw.unique)
-ovr <- over(ocw.unique, countries)
-cntr <- ovr$NAME
-i <- which(is.na(cntr))
-i
-j <- which(cntr != ocw.unique$country)
-j
-cbind(cntr, ocw.unique$country)[j,]
-plot(ocw.unique)
-plot(wrld_simpl, add=T, border= "blue" , lwd=1)
-points(ocw.unique[j, ], col="red" , pch=20, cex=.75)
+# Check for outliers
+# coordinates(ocw.unique) <- ~lon+lat
+# crs(ocw.unique) <- crs(countries)
+# class(ocw.unique)
+# ovr <- over(ocw.unique, countries)
+# cntr <- ovr$NAME
+# #i <- which(is.na(cntr))
+# i
+# j <- which(cntr != ocw.unique$country)
+# j
+# cbind(cntr, ocw.unique$country)[j,]
+# plot(ocw.unique)
+# plot(wrld_simpl, add=T, border= "blue" , lwd=1)
+# points(ocw.unique[j, ], col="red" , pch=20, cex=.75)
 
 #Thin OCW ####
 setwd("~/Desktop/Whydah Project/whydah/Output")
@@ -288,19 +287,19 @@ lonzero = subset(cw.unique, lon==0) #any points have longitude that was auto-set
 lonzero #all OK
 duplicated(cw.unique) #any duplicates?
 
-coordinates(cw.unique) <- ~lon+lat
-crs(cw.unique) <- crs(countries)
-class(cw.unique)
-ovr <- over(cw.unique, countries)
-cntr <- ovr$NAME
-i <- which(is.na(cntr))
-i
-j <- which(cntr != cw.unique$country)
-j
-cbind(cntr, cw.unique$country)[j,] 
-plot(cw.unique)
-plot(wrld_simpl, add=T, border= "blue" , lwd=1)
-points(cw.unique[j, ], col="red" , pch=20, cex=.75)
+# coordinates(cw.unique) <- ~lon+lat
+# crs(cw.unique) <- crs(countries)
+# class(cw.unique)
+# ovr <- over(cw.unique, countries)
+# cntr <- ovr$NAME
+# i <- which(is.na(cntr))
+# i
+# j <- which(cntr != cw.unique$country)
+# j
+# cbind(cntr, cw.unique$country)[j,] 
+# plot(cw.unique)
+# plot(wrld_simpl, add=T, border= "blue" , lwd=1)
+# points(cw.unique[j, ], col="red" , pch=20, cex=.75)
 
 #thin Common Waxbill
 setwd("~/Desktop/Whydah Project/whydah/Output")
@@ -330,9 +329,9 @@ write.SpThin(
 thin_cw2<-read.csv("thin_0001.csv", head=T)
 head(thin_cw2)
 
-#Nutmeg Mannakin
-#nutmeg<-gbif('Lonchura', 'punctulata', geo=T, removeZeros = T)
-save(nutmeg, file="nutmeg.rdata")
+# #Nutmeg Mannakin
+# nutmeg<-gbif('Lonchura', 'punctulata', geo=T, removeZeros = T)
+# save(nutmeg, file="nutmeg.rdata")
 load("nutmeg.rdata")
 head(nutmeg)
 dim(nutmeg)
@@ -344,7 +343,7 @@ nutmeg.unique<- distinct(select(nutmeg,lon,lat,country,species)) #remove duplica
 dim(nutmeg.unique)
 head(nutmeg.unique)
 
-#Removing outliers by country
+# Removing outliers by country
 plot(wrld_simpl)
 points(nutmeg.unique, col="red")
 
@@ -353,8 +352,8 @@ nutmeg.unique<-filter(nutmeg.unique, country !="Canada") #Remove Canada
 nutmeg.unique<-filter(nutmeg.unique, country !="Honduras") #Remove Honduras
 unique(nutmeg.unique$country)
 
-#Remove outliers by lon/lat...for nutmegs these include museum speciments and acoustic labs in US
-#click()
+# Remove outliers by lon/lat...for nutmegs these include museum speciments and acoustic labs in US
+# click()
 points(-94, 38, col='green') #This is acoustic lab point
 which(nutmeg.unique$lon == -94, nutmeg.unique$lat== 38) #find it in the data.frame
 nutmeg.unique<- nutmeg.unique[-9269,] #remove that row!
@@ -386,19 +385,20 @@ lonzero = subset(nutmeg.unique, lon==0) #any points have longitude that was auto
 lonzero
 which(duplicated(nutmeg.unique)==TRUE) #any duplicates?
 
-coordinates(nutmeg.unique) <- ~lon+lat
-crs(nutmeg.unique) <- crs(countries)
-class(nutmeg.unique)
-ovr <- over(nutmeg.unique, countries)
-cntr <- ovr$NAME
-i <- which(is.na(cntr))
-i
-j <- which(cntr != nutmeg.unique$country)
-j
-cbind(cntr, nutmeg.unique$country)[j,]
-plot(nutmeg.unique)
-plot(wrld_simpl, add=T, border= "blue" , lwd=1)
-points(nutmeg.unique[j, ], col="red" , pch=20, cex=.75)
+# #check for outliers
+# coordinates(nutmeg.unique) <- ~lon+lat
+# crs(nutmeg.unique) <- crs(countries)
+# class(nutmeg.unique)
+# ovr <- over(nutmeg.unique, countries)
+# cntr <- ovr$NAME
+# i <- which(is.na(cntr))
+# i
+# j <- which(cntr != nutmeg.unique$country)
+# j
+# cbind(cntr, nutmeg.unique$country)[j,]
+# plot(nutmeg.unique)
+# plot(wrld_simpl, add=T, border= "blue" , lwd=1)
+# points(nutmeg.unique[j, ], col="red" , pch=20, cex=.75)
 
 #Thin Nutmeg ####
 setwd("~/Desktop/Whydah Project/whydah/Output")
@@ -423,134 +423,21 @@ write.SpThin(
   dir=tempdir()
 )
 
-#can elect to read in .csv of all thinned points
+# can elect to read in .csv of all thinned points
 thin_nutmeg2<-read.csv("thin_0001.csv", head=T)
 head(thin_nutmeg2) #Always check to make sure this shows correct species
 
-#Back to data directory one more time
+# Back to data directory one more time
 setwd("~/Desktop/Whydah Project/whydah/Data")
 
-#setting up background points according to Hijmans and Elith####
-#Also, we have our thinned occurrence sets
+# setting up background points according to Hijmans and Elith####
+# Also, we have our thinned occurrence sets
 thin_ptw2
 thin_cw2
 thin_ocw2
 thin_nutmeg2
 
-#Environmental Variables####
-# get the file names...these should be all of our our bioclim
-files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
-predictors<-stack(files)
-predictors #WC5 data, without waxbill
-mask <- raster(files[1]) #just sampling from 1 of the bioclim variables (since they are all from whole world)
-set.seed(1963) #makes sure we're generating random numbers
-
-# Might want to constrain background sampling using extent() ####
-ext <- extent(-119, 55.4539,-33,23) # the area of sampling using a spatial extent ... could be useful
-bg2 <- randomPoints(mask, 50, ext=e)
-plot(!is.na(mask), legend=FALSE)
-plot(e, add=TRUE, col= 'red')
-points(bg2, cex=0.5)
-
-#Different Methods for PCA####
-head(envtrain)
-envtrain.just.bioclim<-envtrain[,3:21]
-envtrain.all<-envtrain[,3:22]
-N<-scale(envtrain.just.bioclim) #Maybe all climate variables need to be all on same scale?
-
-g<-cor(N, use="complete")
-g #this is the corrleation matrix
-suit<-extract(px, envtrain[,1:2]) #if we also need the suitability scores for our response
-suit2<-cbind(suit,N)
-head(suit2)
-suit3<-suit2[complete.cases(suit2),]
-h<-select07(suit3[,2:20],suit3[,1], family="gaussian",univar="glm",threshold=.7, method="pearson")
-#predictors can be continuous & Categorical, response must be any type of variable accepted by glm
-#threshold...when higher, means less conservative. Returns data.frame where r < .7
-head(h) #this suggests bio1, 16, 18, 19
-
-#with categorical variable included
-suit4<-cbind(suit,envtrain.all)
-suit5<-suit4[complete.cases(suit4),]
-dim(suit5)
-h2<-select07(suit5[,2:21],suit5[,1], family="gaussian",univar="glm",threshold=.7, method="pearson") #sequence = c(20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2))
-head(h2) #when waxbill is included, suggest bio1, 16, 18, 19 & Waxbill
-
-# Traditional PCA####
-#Example from Hijmans for calculating PCA of Rasterstack
-#sr <- sampleRandom(envs.df, 1000) #could sample randomly of rasterbrick is too large
-
-#PCA for Common Waxbill Predictors
-pca_cw <- prcomp(na.omit(values(predictors_cw)), scale=T, center=T)
-summary(pca_cw) #prop. variance is similar to eigen value
-print(pca_cw) #this function prints loadings for each PCA
-pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_cw$rotation #for EIGEN VECTORS
-plot(pca_cw, type="l") #screeplot1
-screeplot(pca_cw, type="l")  #screeplot2
-biplot(pca_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
-pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make further predictions w/ PCA results
-#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
-plot(pca_predictions_cw[,1], pca_predictions_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
-
-#PCA for Orange Cheeked Waxbill Predictors
-pca_ocw <- prcomp(na.omit(values(predictors_ocw)), scale=T, center=T)
-summary(pca_cw) #prop. variance is similar to eigen value
-print(pca_cw) #this function prints loadings for each PCA
-pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_ocw$rotation #for EIGEN VECTORS
-plot(pca_ocw, type="l") #screeplot1
-screeplot(pca_ocw, type="l")  #screeplot2
-biplot(pca_ocw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
-pca_predictions_ocw <- na.omit(predict(predictors_ocw, pca_ocw, index=1:4)) #make further predictions w/ PCA results
-#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
-plot(pca_predictions_ocw[,1], pca_predictions_ocw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
-
-#PCA for Nutmeg Predictors
-pca_nutmeg <- prcomp(na.omit(values(predictors_nutmeg)), scale=T, center=T)
-summary(pca_nutmeg) #prop. variance is similar to eigen value
-print(pca_nutmeg) #this function prints loadings for each PCA
-pca_nutmeg$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_nutmeg$rotation #for EIGEN VECTORS
-plot(pca_nutmeg, type="l") #screeplot1
-screeplot(pca_nutmeg, type="l")  #screeplot2
-biplot(pca_nutmeg, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
-pca_predictions_nutmeg <- na.omit(predict(predictors_nutmeg, pca_nutmeg, index=1:4)) #make further predictions w/ PCA results
-#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
-plot(pca_predictions_nutmeg[,1], pca_predictions_nutmeg[,2]) #xlim=c(-12,7), ylim=c(-12,7)
-
-#PCA for OCW AND CW Predictors 
-pca_ocw_and_cw <- prcomp(na.omit(values(predictors_ocw_and_cw)), scale=T, center=T)
-summary(pca_ocw_and_cw) #prop. variance is similar to eigen value
-print(pca_ocw_and_cw) #this function prints loadings for each PCA
-pca_ocw_and_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_ocw_and_cw$rotation #for EIGEN VECTORS
-plot(pca_ocw_and_cw, type="l") #screeplot1
-screeplot(pca_ocw_and_cw, type="l")  #screeplot2
-biplot(pca_ocw_and_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
-pca_predictions_ocw_and_cw <- na.omit(predict(predictors_ocw_and_cw, pca_ocw_and_cw, index=1:5)) #make further predictions w/ PCA results
-#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
-plot(pca_predictions_ocw_and_cw[,1], pca_predictions_ocw_and_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
-
-
-#PCA with just bioclim
-#results are pretty much the same as with waxbills except axis 4!
-pca_bioclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
-summary(pca_bioclim_only) #prop. variance is similar to eigen value
-print(pca_bioclim_only) #this function prints loadings for each PCA
-pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_bioclim_only$rotation #for EIGEN VECTORS
-pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
-pca2_bioclim_only$rotation #for EIGEN VECTORS
-pca_bioclim_only$rotation #for EIGEN VECTORS
-pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
-pca2_bioclim_only$rotation #for EIGEN VECTORS
-
-#Preparing Host/Climate Rasters####
+#Preparing Presence/Absence Rasters####
 #Function for Presence/Absence Rasters for Host Species by Amy Whitehead
 presence.absence.raster <- function (mask.raster,species.data,raster.label="") {
   require(raster)
@@ -603,15 +490,21 @@ pa_raster_nutmeg <- presence.absence.raster(mask.raster=myRaster, species.data=t
 pa_raster_nutmeg
 plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
 
-#Now, onto bioclim data
+#Environmental Variables####
+# get the file names...these should be all of our our bioclim
+files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
+predictors<-stack(files)
+predictors #WC5 data, without waxbill
+mask <- raster(files[1]) #just sampling from 1 of the bioclim variables (since they are all from whole world)
+set.seed(1963) #makes sure we're generating random numbers
+
+#Created custom sets of predictors
 files #here are all climate files
 predictors_no_host<-stack(files)
 predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & waxbill presence/absence
 predictors_ocw<-stack(files, pa_raster_ocw)
 predictors_nutmeg<-stack(files, pa_raster_nutmeg)
 predictors_ocw_and_cw<-stack(files, pa_raster_cw,pa_raster_ocw)
-plot(predictors_cw)
-plot(predictors_ocw)
 
 #background points
 backg <- randomPoints(predictors_no_host, n=4000, ext = (extent(-119, 55.4539,-33,23)), extf=1.25) #pull background points from specified extent
@@ -627,9 +520,81 @@ ext<-extent(-119, 55.4539,-33,23)
 #get a rasterstack that is full of cropped rasters
 backg_cropped<-crop(predictors_no_host,ext)
 
-
 plot(wrld_simpl,main="Background Points for MaxEnt Model\nExtent Matches Whydah Distribution")
 points(backg, cex=.3, col="purple")
+
+# Traditional PCA####
+#Example from Hijmans for calculating PCA of Rasterstack
+#sr <- sampleRandom(envs.df, 1000) #could sample randomly of rasterbrick is too large
+
+#PCA for Common Waxbill Predictors
+pca_cw <- prcomp(na.omit(values(predictors_cw)), scale=T, center=T)
+summary(pca_cw) #prop. variance is similar to eigen value
+print(pca_cw) #this function prints loadings for each PCA
+pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_cw$rotation #for EIGEN VECTORS
+plot(pca_cw, type="l") #screeplot1
+screeplot(pca_cw, type="l")  #screeplot2
+#biplot(pca_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_cw[,1], pca_predictions_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
+#PCA for Orange Cheeked Waxbill Predictors
+pca_ocw <- prcomp(na.omit(values(predictors_ocw)), scale=T, center=T)
+summary(pca_cw) #prop. variance is similar to eigen value
+print(pca_cw) #this function prints loadings for each PCA
+pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_ocw$rotation #for EIGEN VECTORS
+plot(pca_ocw, type="l") #screeplot1
+screeplot(pca_ocw, type="l")  #screeplot2
+#biplot(pca_ocw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_ocw <- na.omit(predict(predictors_ocw, pca_ocw, index=1:4)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_ocw[,1], pca_predictions_ocw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
+#PCA for Nutmeg Predictors
+pca_nutmeg <- prcomp(na.omit(values(predictors_nutmeg)), scale=T, center=T)
+summary(pca_nutmeg) #prop. variance is similar to eigen value
+print(pca_nutmeg) #this function prints loadings for each PCA
+pca_nutmeg$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_nutmeg$rotation #for EIGEN VECTORS
+plot(pca_nutmeg, type="l") #screeplot1
+screeplot(pca_nutmeg, type="l")  #screeplot2
+#biplot(pca_nutmeg, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_nutmeg <- na.omit(predict(predictors_nutmeg, pca_nutmeg, index=1:4)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_nutmeg[,1], pca_predictions_nutmeg[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
+#PCA for OCW AND CW Predictors 
+pca_ocw_and_cw <- prcomp(na.omit(values(predictors_ocw_and_cw)), scale=T, center=T)
+summary(pca_ocw_and_cw) #prop. variance is similar to eigen value
+print(pca_ocw_and_cw) #this function prints loadings for each PCA
+pca_ocw_and_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_ocw_and_cw$rotation #for EIGEN VECTORS
+plot(pca_ocw_and_cw, type="l") #screeplot1
+screeplot(pca_ocw_and_cw, type="l")  #screeplot2
+#biplot(pca_ocw_and_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_ocw_and_cw <- na.omit(predict(predictors_ocw_and_cw, pca_ocw_and_cw, index=1:5)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_ocw_and_cw[,1], pca_predictions_ocw_and_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
+#PCA with just bioclim
+#results are pretty much the same as with waxbills except axis 4!
+pca_bioclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
+summary(pca_bioclim_only) #prop. variance is similar to eigen value
+print(pca_bioclim_only) #this function prints loadings for each PCA
+pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_bioclim_only$rotation #for EIGEN VECTORS
+pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
+pca2_bioclim_only$rotation #for EIGEN VECTORS
+pca_bioclim_only$rotation #for EIGEN VECTORS
+pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
+pca2_bioclim_only$rotation #for EIGEN VECTORS
 
 #SDMs using MaxEnt#####
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
@@ -680,12 +645,12 @@ head(thin_ptw2_coords)
 max(df_cw$Suitability)
 
 #Now make the map
-p<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
+p_cw_PCA<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills & PCA") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills and PCA") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -697,7 +662,7 @@ p<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
@@ -741,12 +706,12 @@ head(thin_ptw2_coords)
 max(df_ocw_pca$Suitability)
 
 #Now make the map
-p<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
+p_ocw_PCA<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Orange Cheeked Waxbills & PCA") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Orange Cheeked Waxbills and PCA") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -758,7 +723,7 @@ p<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.75))
 
 #MaxEnt for Whydah with Nutmeg and PCA####
@@ -798,12 +763,12 @@ head(thin_ptw2_coords)
 max(df_nutmeg_pca$Suitability) #The max suitability score is only .579
 
 #Now make the map
-p<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
+p_nutmeg_PCA<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Nutmeg Mannikin & PCA") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Nutmeg Mannikins and PCA") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -815,7 +780,7 @@ p<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.75))
 
 #MaxEnt for Whydah with OCW AND CW####
@@ -855,12 +820,12 @@ head(thin_ptw2_coords)
 max(df_ocw_and_cw_pca$Suitability)
 
 #Now make the map
-p<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
+p_ocw_and_cw_PCA<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Native Hosts & PCA") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Native Hosts and PCA") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -872,7 +837,7 @@ p<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.75)) +
   #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
@@ -915,12 +880,12 @@ head(thin_ptw2_coords)
 max(df_pca_bio_only$Suitability)
 
 #Now make the map
-p<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
+p_no_host_PCA<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith PCA and NO HOSTS") +
+  ggtitle("MaxEnt Model for Whydahs\nwith No Hosts and PCA") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -932,7 +897,7 @@ p<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.75))
 
 #MaxEnt  for Whydah - No Host species / all bioclim####
@@ -974,12 +939,12 @@ head(thin_ptw2_coords)
 max(df_no_host$Suitability)
 
 #Now make the map
-p<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
+p_no_host_all_bioclim<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith No Host & All 19 Bioclim") +
+  ggtitle("MaxEnt Model for Whydahs\nwith No Hosts and all WorldClim") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -991,7 +956,7 @@ p<-ggplot(data=df_no_host, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_no_host_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
@@ -1033,12 +998,12 @@ colnames(df_ocw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate
 head(thin_ptw2_coords)
 max(df_ocw_all_bioclim$Suitability)
 
-p<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
+p_ocw_all_bioclim<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith OCW & All 19 Bioclim") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Orange Cheeked Waxbills and all WorldClim") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1050,7 +1015,7 @@ p<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
 #MaxEnt for Whydah with Common Waxbill and ALL BIOCLIM####
@@ -1089,12 +1054,12 @@ colnames(df_cw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate 
 head(thin_ptw2_coords)
 max(df_cw_all_bioclim$Suitability)
 
-p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
+p_cw_all_bioclim<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith CW & All 19 Bioclim") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills and all WorldClim") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1145,12 +1110,12 @@ colnames(df_nutmeg_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropri
 head(thin_ptw2_coords)
 max(df_nutmeg_all_bioclim$Suitability)
 
-p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
+p_nutmeg_all_bioclim<-ggplot(data=df_nutmeg_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith CW & All 19 Bioclim") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Nutmeg Mannikin and all WorldClim") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1162,7 +1127,7 @@ p<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_nutmeg_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
 #MaxEnt for Whydah with OCW AND CW and ALL BIOCLIM####
@@ -1201,12 +1166,12 @@ colnames(df_ocw_and_cw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appr
 head(thin_ptw2_coords)
 max(df_ocw_and_cw_all_bioclim$Suitability)
 
-p<-ggplot(data=df_ocw_and_cw_all_bioclim, aes(y=lat, x=lon)) +
+p_ocw_and_cw_all_bioclim<-ggplot(data=df_ocw_and_cw_all_bioclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith OCW and CW & All 19 Bioclim") +
+  ggtitle("MaxEnt Model for Whydahs\nwith Native Hosts and all WorldClim") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1218,8 +1183,41 @@ p<-ggplot(data=df_ocw_and_cw_all_bioclim, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_and_cw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
+
+
+#Combining All MaxEnt Maps to one PDF####
+par(mfrow = c(4, 2))
+p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                na.value = "black",limits=c(0,.75))
+
+p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                 na.value = "black", limits=c(0,.75))
+
+p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                    na.value = "black", limits=c(0,.75))
+
+p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                        na.value = "black", limits=c(0,.75))
+
+p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                     na.value = "black", limits=c(0,.75))
+
+p_no_host_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                             na.value = "black",limits=c(0,.75))
+
+p_ocw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                         na.value = "black",limits=c(0,.75))
+
+p_cw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                        na.value = "black",limits=c(0,.75))
+
+p_nutmeg_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                            na.value = "black",limits=c(0,.75))
+  
+p_ocw_and_cw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                na.value = "black",limits=c(0,.75))
 
 
 ###ENMeval###
