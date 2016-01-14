@@ -491,11 +491,11 @@ pa_raster_nutmeg
 plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
 
 #Environmental Variables####
-# get the file names...these should be all of our our bioclim
+# get the file names...these should be all of our our worldclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
 predictors<-stack(files)
 predictors #WC5 data, without waxbill
-mask <- raster(files[1]) #just sampling from 1 of the bioclim variables (since they are all from whole world)
+mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since they are all from whole world)
 set.seed(1963) #makes sure we're generating random numbers
 
 #Created custom sets of predictors
@@ -583,14 +583,14 @@ pca_predictions_ocw_and_cw <- na.omit(predict(predictors_ocw_and_cw, pca_ocw_and
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_ocw_and_cw[,1], pca_predictions_ocw_and_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
-#PCA with just bioclim
+#PCA with just worldclim
 #results are pretty much the same as with waxbills except axis 4!
-pca_bioclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
-summary(pca_bioclim_only) #prop. variance is similar to eigen value
-print(pca_bioclim_only) #this function prints loadings for each PCA
-pca_bioclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_bioclim_only$rotation #for EIGEN VECTORS
-pca_predictions_bioclim_only <- na.omit(predict(predictors, pca_bioclim_only, index=1:4)) 
+pca_worldclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
+summary(pca_worldclim_only) #prop. variance is similar to eigen value
+print(pca_worldclim_only) #this function prints loadings for each PCA
+pca_worldclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_worldclim_only$rotation #for EIGEN VECTORS
+pca_predictions_worldclim_only <- na.omit(predict(predictors, pca_worldclim_only, index=1:4)) 
 
 #SDMs using MaxEnt#####
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
@@ -609,7 +609,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_pca_only <- maxent(pca_predictions_bioclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -618,9 +618,9 @@ response(mx_pca_only) #response curves
 plot(mx_pca_only) #importance of each variable in building model
 
 #Model Evaluation
-e_pca_bio_only <- evaluate(test, backg_test, mx_pca_only, pca_predictions_bioclim_only) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_pca_bio_only <- evaluate(test, backg_test, mx_pca_only, pca_predictions_worldclim_only) #evalute test points, pseudo-absences (random background points), the model and predictors
 e_pca_bio_only #shows number of presences/absences/AUC and cor
-px_pca_bio_only <- predict(pca_predictions_bioclim_only, mx_pca_only, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+px_pca_bio_only <- predict(pca_predictions_worldclim_only, mx_pca_only, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
 par(mfrow=c(1,2))
 plot(px_pca_bio_only, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
@@ -896,7 +896,7 @@ p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1",
   #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
 
-#MaxEnt  for Whydah - No Host species / all bioclim####
+#MaxEnt  for Whydah - No Host species / all worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
@@ -934,7 +934,7 @@ head(thin_ptw2_coords)
 max(df_no_host$Suitability)
 
 #Now make the map
-p_no_host_all_bioclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
+p_no_host_all_worldclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
@@ -951,48 +951,48 @@ p_no_host_all_bioclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_no_host_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
 #scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.75)) #this one works!
 
-#MaxEnt for Whydah with OCW and ALL BIOCLIM####
+#MaxEnt for Whydah with OCW and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_ocw_all_bioclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
 #removeDuplicates = if true, then presence points within same raster cell are removed
-response(mx_ocw_all_bioclim) #response curves
-plot(mx_ocw_all_bioclim) #importance of each variable in building model
+response(mx_ocw_all_worldclim) #response curves
+plot(mx_ocw_all_worldclim) #importance of each variable in building model
 
 #Model Evaluation 
-e_ocw_all_bioclim <- evaluate(test, backg_test, mx_ocw_all_bioclim, predictors_ocw) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_ocw_all_bioclim #shows number of presences/absences/AUC and cor
-px_ocw_all_bioclim <- predict(predictors_ocw, mx_ocw_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
-plot(px_ocw_all_bioclim, main= 'Maxent, raw values')
+e_ocw_all_worldclim <- evaluate(test, backg_test, mx_ocw_all_worldclim, predictors_ocw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_ocw_all_worldclim #shows number of presences/absences/AUC and cor
+px_ocw_all_worldclim <- predict(predictors_ocw, mx_ocw_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+plot(px_ocw_all_worldclim, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_ocw_all_bioclim <- threshold(e_ocw_all_bioclim, 'spec_sens' )
-plot(px_ocw_all_bioclim > tr_ocw_all_bioclim, main='presence/absence')
+tr_ocw_all_worldclim <- threshold(e_ocw_all_worldclim, 'spec_sens' )
+plot(px_ocw_all_worldclim > tr_ocw_all_worldclim, main='presence/absence')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
-plot(e_ocw_all_bioclim, 'ROC')
+plot(e_ocw_all_worldclim, 'ROC')
 
 #Plotting Maxent output
-map.ocw.all.bioclim <- rasterToPoints(px_ocw_all_bioclim) #make predictions raster a set of points for ggplot
-df_ocw_all_bioclim <- data.frame(map.ocw.all.bioclim) #convert to data.frame
-head(df_ocw_all_bioclim)
-colnames(df_ocw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+map.ocw.all.worldclim <- rasterToPoints(px_ocw_all_worldclim) #make predictions raster a set of points for ggplot
+df_ocw_all_worldclim <- data.frame(map.ocw.all.worldclim) #convert to data.frame
+head(df_ocw_all_worldclim)
+colnames(df_ocw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
-max(df_ocw_all_bioclim$Suitability)
+max(df_ocw_all_worldclim$Suitability)
 
-p_ocw_all_bioclim<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
+p_ocw_all_worldclim<-ggplot(data=df_ocw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
@@ -1009,46 +1009,46 @@ p_ocw_all_bioclim<-ggplot(data=df_ocw_all_bioclim, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_ocw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
-#MaxEnt for Whydah with Common Waxbill and ALL BIOCLIM####
+#MaxEnt for Whydah with Common Waxbill and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_cw_all_bioclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
 #removeDuplicates = if true, then presence points within same raster cell are removed
-response(mx_cw_all_bioclim) #response curves
-plot(mx_cw_all_bioclim) #importance of each variable in building model
+response(mx_cw_all_worldclim) #response curves
+plot(mx_cw_all_worldclim) #importance of each variable in building model
 
 #Model Evaluation 
-e_cw_all_bioclim <- evaluate(test, backg_test, mx_cw_all_bioclim, predictors_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_cw_all_bioclim #shows number of presences/absences/AUC and cor
-px_cw_all_bioclim <- predict(predictors_cw, mx_cw_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+e_cw_all_worldclim <- evaluate(test, backg_test, mx_cw_all_worldclim, predictors_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_cw_all_worldclim #shows number of presences/absences/AUC and cor
+px_cw_all_worldclim <- predict(predictors_cw, mx_cw_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
 par(mfrow=c(1,2))
-plot(px_cw_all_bioclim, main= 'Maxent, raw values')
+plot(px_cw_all_worldclim, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_cw_all_bioclim <- threshold(e_cw_all_bioclim, 'spec_sens' )
-plot(px_cw_all_bioclim > tr_cw_all_bioclim, main='presence/absence')
+tr_cw_all_worldclim <- threshold(e_cw_all_worldclim, 'spec_sens' )
+plot(px_cw_all_worldclim > tr_cw_all_worldclim, main='presence/absence')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
-plot(e_cw_all_bioclim, 'ROC')
+plot(e_cw_all_worldclim, 'ROC')
 
 #Plotting Maxent output
-map.cw.all.bioclim <- rasterToPoints(px_cw_all_bioclim) #make predictions raster a set of points for ggplot
-df_cw_all_bioclim <- data.frame(map.cw.all.bioclim) #convert to data.frame
-head(df_cw_all_bioclim)
-colnames(df_cw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+map.cw.all.worldclim <- rasterToPoints(px_cw_all_worldclim) #make predictions raster a set of points for ggplot
+df_cw_all_worldclim <- data.frame(map.cw.all.worldclim) #convert to data.frame
+head(df_cw_all_worldclim)
+colnames(df_cw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
-max(df_cw_all_bioclim$Suitability)
+max(df_cw_all_worldclim$Suitability)
 
-p_cw_all_bioclim<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
+p_cw_all_worldclim<-ggplot(data=df_cw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
@@ -1068,43 +1068,43 @@ p_cw_all_bioclim<-ggplot(data=df_cw_all_bioclim, aes(y=lat, x=lon)) +
 p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
-#MaxEnt for Whydah with Nutmeg Mannikin and ALL BIOCLIM####
+#MaxEnt for Whydah with Nutmeg Mannikin and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_nutmeg_all_bioclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_nutmeg_all_worldclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
 #removeDuplicates = if true, then presence points within same raster cell are removed
-response(mx_nutmeg_all_bioclim) #response curves
-plot(mx_nutmeg_all_bioclim) #importance of each variable in building model
+response(mx_nutmeg_all_worldclim) #response curves
+plot(mx_nutmeg_all_worldclim) #importance of each variable in building model
 
 #Model Evaluation 
-e_nutmeg_all_bioclim <- evaluate(test, backg_test, mx_nutmeg_all_bioclim, predictors_nutmeg) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_nutmeg_all_bioclim #shows number of presences/absences/AUC and cor
-px_nutmeg_all_bioclim <- predict(predictors_nutmeg, mx_nutmeg_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+e_nutmeg_all_worldclim <- evaluate(test, backg_test, mx_nutmeg_all_worldclim, predictors_nutmeg) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_nutmeg_all_worldclim #shows number of presences/absences/AUC and cor
+px_nutmeg_all_worldclim <- predict(predictors_nutmeg, mx_nutmeg_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
 par(mfrow=c(1,2))
-plot(px_nutmeg_all_bioclim, main= 'Maxent, raw values')
+plot(px_nutmeg_all_worldclim, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_nutmeg_all_bioclim <- threshold(e_nutmeg_all_bioclim, 'spec_sens' )
-plot(px_nutmeg_all_bioclim > tr_nutmeg_all_bioclim, main='presence/absence')
+tr_nutmeg_all_worldclim <- threshold(e_nutmeg_all_worldclim, 'spec_sens' )
+plot(px_nutmeg_all_worldclim > tr_nutmeg_all_worldclim, main='presence/absence')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
-plot(e_nutmeg_all_bioclim, 'ROC')
+plot(e_nutmeg_all_worldclim, 'ROC')
 
 #Plotting Maxent output
-map.nutmeg.all.bioclim <- rasterToPoints(px_nutmeg_all_bioclim) #make predictions raster a set of points for ggplot
-df_nutmeg_all_bioclim <- data.frame(map.nutmeg.all.bioclim) #convert to data.frame
-head(df_nutmeg_all_bioclim)
-colnames(df_nutmeg_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+map.nutmeg.all.worldclim <- rasterToPoints(px_nutmeg_all_worldclim) #make predictions raster a set of points for ggplot
+df_nutmeg_all_worldclim <- data.frame(map.nutmeg.all.worldclim) #convert to data.frame
+head(df_nutmeg_all_worldclim)
+colnames(df_nutmeg_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
-max(df_nutmeg_all_bioclim$Suitability)
+max(df_nutmeg_all_worldclim$Suitability)
 
-p_nutmeg_all_bioclim<-ggplot(data=df_nutmeg_all_bioclim, aes(y=lat, x=lon)) +
+p_nutmeg_all_worldclim<-ggplot(data=df_nutmeg_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
@@ -1121,46 +1121,46 @@ p_nutmeg_all_bioclim<-ggplot(data=df_nutmeg_all_bioclim, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_nutmeg_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
-#MaxEnt for Whydah with OCW AND CW and ALL BIOCLIM####
+#MaxEnt for Whydah with OCW AND CW and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_ocw_and_cw_all_bioclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_ocw_and_cw_all_worldclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
 #removeDuplicates = if true, then presence points within same raster cell are removed
-response(mx_ocw_and_cw_all_bioclim) #response curves
-plot(mx_ocw_and_cw_all_bioclim) #importance of each variable in building model
+response(mx_ocw_and_cw_all_worldclim) #response curves
+plot(mx_ocw_and_cw_all_worldclim) #importance of each variable in building model
 
 #Model Evaluation 
-e_ocw_and_cw_all_bioclim <- evaluate(test, backg_test, mx_ocw_and_cw_all_bioclim, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_ocw_and_cw_all_bioclim #shows number of presences/absences/AUC and cor
-px_ocw_and_cw_all_bioclim <- predict(predictors_ocw_and_cw, mx_ocw_and_cw_all_bioclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+e_ocw_and_cw_all_worldclim <- evaluate(test, backg_test, mx_ocw_and_cw_all_worldclim, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_ocw_and_cw_all_worldclim #shows number of presences/absences/AUC and cor
+px_ocw_and_cw_all_worldclim <- predict(predictors_ocw_and_cw, mx_ocw_and_cw_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
 par(mfrow=c(1,2))
-plot(px_ocw_and_cw_all_bioclim, main= 'Maxent, raw values')
+plot(px_ocw_and_cw_all_worldclim, main= 'Maxent, raw values')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_ocw_and_cw_all_bioclim <- threshold(e_ocw_and_cw_all_bioclim, 'spec_sens' )
-plot(px_ocw_and_cw_all_bioclim > tr_ocw_and_cw_all_bioclim, main='presence/absence')
+tr_ocw_and_cw_all_worldclim <- threshold(e_ocw_and_cw_all_worldclim, 'spec_sens' )
+plot(px_ocw_and_cw_all_worldclim > tr_ocw_and_cw_all_worldclim, main='presence/absence')
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
-plot(e_ocw_and_cw_all_bioclim, 'ROC')
+plot(e_ocw_and_cw_all_worldclim, 'ROC')
 
 #Plotting Maxent output
-map.ocw.and.cw.all.bioclim <- rasterToPoints(px_ocw_and_cw_all_bioclim) #make predictions raster a set of points for ggplot
-df_ocw_and_cw_all_bioclim <- data.frame(map.ocw.and.cw.all.bioclim) #convert to data.frame
-head(df_ocw_and_cw_all_bioclim)
-colnames(df_ocw_and_cw_all_bioclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+map.ocw.and.cw.all.worldclim <- rasterToPoints(px_ocw_and_cw_all_worldclim) #make predictions raster a set of points for ggplot
+df_ocw_and_cw_all_worldclim <- data.frame(map.ocw.and.cw.all.worldclim) #convert to data.frame
+head(df_ocw_and_cw_all_worldclim)
+colnames(df_ocw_and_cw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
-max(df_ocw_and_cw_all_bioclim$Suitability)
+max(df_ocw_and_cw_all_worldclim$Suitability)
 
-p_ocw_and_cw_all_bioclim<-ggplot(data=df_ocw_and_cw_all_bioclim, aes(y=lat, x=lon)) +
+p_ocw_and_cw_all_worldclim<-ggplot(data=df_ocw_and_cw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
@@ -1177,7 +1177,7 @@ p_ocw_and_cw_all_bioclim<-ggplot(data=df_ocw_and_cw_all_bioclim, aes(y=lat, x=lo
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_ocw_and_cw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.75))
 
 
@@ -1198,19 +1198,19 @@ p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1",
 p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                      na.value = "black", limits=c(0,.75))
 
-p_no_host_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                              na.value = "black",limits=c(0,.75))
 
-p_ocw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                          na.value = "black",limits=c(0,.75))
 
-p_cw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                         na.value = "black",limits=c(0,.75))
 
-p_nutmeg_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                             na.value = "black",limits=c(0,.75))
   
-p_ocw_and_cw_all_bioclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                 na.value = "black",limits=c(0,.75))
 
 
@@ -1249,10 +1249,10 @@ enmeval_results@results
 enmeval_results_cropped <- ENMevaluate(thin_ptw2_coords, backg_cropped, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
 #ENMeval for PCA results
-enmeval_results_pca_bioclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_bioclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
 #ENMeval for PCA results
-enmeval_results_pca_bioclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_bioclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
 
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
