@@ -957,16 +957,25 @@ p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
 #scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.75)) #this one works!
 
+<<<<<<< HEAD
 #MaxEnt for Whydah with Common Waxbill and ALL worldclim####
+=======
+#MaxEnt for Whydah with OCW and ALL worldclim####
+>>>>>>> c8f313a3a135e3f8236886b0c4de995131b09df0
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
+<<<<<<< HEAD
 mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+=======
+mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+>>>>>>> c8f313a3a135e3f8236886b0c4de995131b09df0
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
 #removeDuplicates = if true, then presence points within same raster cell are removed
+<<<<<<< HEAD
 response(mx_cw_all_worldclim) #response curves
 plot(mx_cw_all_worldclim) #importance of each variable in building model
 
@@ -994,35 +1003,7 @@ head(thin_ptw2_coords)
 max(df_cw_all_worldclim$Suitability)
 
 p_cw_all_worldclim<-ggplot(data=df_cw_all_worldclim, aes(y=lat, x=lon)) +
-  geom_raster(aes(fill=Suitability)) +
-  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
-  theme_bw() +
-  coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills and all WorldClim") +
-  theme(axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16, angle=90),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        plot.title = element_text(face="bold", size=20),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = 'right',
-        legend.key = element_blank(),
-        panel.background = element_rect(fill = 'black')
-  )
-p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.75))
-
-#MaxEnt for Whydah with OCW and ALL worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+=======
 response(mx_ocw_all_worldclim) #response curves
 plot(mx_ocw_all_worldclim) #importance of each variable in building model
 
@@ -1049,6 +1030,103 @@ head(thin_ptw2_coords)
 max(df_ocw_all_worldclim$Suitability)
 
 p_ocw_all_worldclim<-ggplot(data=df_ocw_all_worldclim, aes(y=lat, x=lon)) +
+>>>>>>> c8f313a3a135e3f8236886b0c4de995131b09df0
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills and all WorldClim") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+<<<<<<< HEAD
+p + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black",limits=c(0,.75))
+
+#MaxEnt for Whydah with OCW and ALL worldclim####
+=======
+p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                         na.value = "black",limits=c(0,.75))
+
+#MaxEnt for Whydah with Common Waxbill and ALL worldclim####
+>>>>>>> c8f313a3a135e3f8236886b0c4de995131b09df0
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+<<<<<<< HEAD
+mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+=======
+mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+>>>>>>> c8f313a3a135e3f8236886b0c4de995131b09df0
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+<<<<<<< HEAD
+response(mx_ocw_all_worldclim) #response curves
+plot(mx_ocw_all_worldclim) #importance of each variable in building model
+
+#Model Evaluation 
+e_ocw_all_worldclim <- evaluate(test, backg_test, mx_ocw_all_worldclim, predictors_ocw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_ocw_all_worldclim #shows number of presences/absences/AUC and cor
+px_ocw_all_worldclim <- predict(predictors_ocw, mx_ocw_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+plot(px_ocw_all_worldclim, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_ocw_all_worldclim <- threshold(e_ocw_all_worldclim, 'spec_sens' )
+plot(px_ocw_all_worldclim > tr_ocw_all_worldclim, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_ocw_all_worldclim, 'ROC')
+
+#Plotting Maxent output
+map.ocw.all.worldclim <- rasterToPoints(px_ocw_all_worldclim) #make predictions raster a set of points for ggplot
+df_ocw_all_worldclim <- data.frame(map.ocw.all.worldclim) #convert to data.frame
+head(df_ocw_all_worldclim)
+colnames(df_ocw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_ocw_all_worldclim$Suitability)
+
+p_ocw_all_worldclim<-ggplot(data=df_ocw_all_worldclim, aes(y=lat, x=lon)) +
+=======
+response(mx_cw_all_worldclim) #response curves
+plot(mx_cw_all_worldclim) #importance of each variable in building model
+
+#Model Evaluation 
+e_cw_all_worldclim <- evaluate(test, backg_test, mx_cw_all_worldclim, predictors_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_cw_all_worldclim #shows number of presences/absences/AUC and cor
+px_cw_all_worldclim <- predict(predictors_cw, mx_cw_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_cw_all_worldclim, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_cw_all_worldclim <- threshold(e_cw_all_worldclim, 'spec_sens' )
+plot(px_cw_all_worldclim > tr_cw_all_worldclim, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_cw_all_worldclim, 'ROC')
+
+#Plotting Maxent output
+map.cw.all.worldclim <- rasterToPoints(px_cw_all_worldclim) #make predictions raster a set of points for ggplot
+df_cw_all_worldclim <- data.frame(map.cw.all.worldclim) #convert to data.frame
+head(df_cw_all_worldclim)
+colnames(df_cw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_cw_all_worldclim$Suitability)
+
+p_cw_all_worldclim<-ggplot(data=df_cw_all_worldclim, aes(y=lat, x=lon)) +
+>>>>>>> c8f313a3a135e3f8236886b0c4de995131b09df0
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
