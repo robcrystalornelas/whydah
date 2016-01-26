@@ -91,7 +91,7 @@ duplicated(ptw.unique) #any duplicates?
 setwd("~/Desktop/Whydah Project/whydah/Output") #running from mac
 # set coordinate system
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
-# then spThin!
+# then thin
 thin1 <-spThin(
   ptw.unique, 
   x.col = "lon",
@@ -103,8 +103,10 @@ summary(thin1)
 str(thin1)
 plot(thin1) #to visualize which records we kept after thinning
 # hexagons show the distribution of all the occurrence records and the 
+?spThin
 # red points show the location of the retained records.
 thin1@call
+
 
 # Saving the thinned file####
 # print temporary dir
@@ -505,6 +507,7 @@ predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & 
 predictors_ocw<-stack(files, pa_raster_ocw)
 predictors_nutmeg<-stack(files, pa_raster_nutmeg)
 predictors_ocw_and_cw<-stack(files, pa_raster_cw,pa_raster_ocw)
+predictors_all_hosts<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg)
 
 #background points
 backg <- randomPoints(predictors_no_host, n=4000, ext = (extent(-119, 55.4539,-33,23)), extf=1.25) #pull background points from specified extent
@@ -541,6 +544,7 @@ screeplot(pca_cw, type="l")  #screeplot2
 pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_cw[,1], pca_predictions_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
 
 #PCA for Orange Cheeked Waxbill Predictors
 pca_ocw <- prcomp(na.omit(values(predictors_ocw)), scale=T, center=T)
@@ -592,6 +596,20 @@ print(pca_worldclim_only) #this function prints loadings for each PCA
 pca_worldclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
 pca_worldclim_only$rotation #for EIGEN VECTORS
 pca_predictions_worldclim_only <- na.omit(predict(predictors, pca_worldclim_only, index=1:4)) 
+
+#PCA for all hosts
+pca_all_hosts <- prcomp(na.omit(values(predictors_all_hosts)), scale=T, center=T)
+summary(pca_all_hosts) #prop. variance is similar to eigen value
+print(pca_all_hosts) #this function prints loadings for each PCA
+pca_all_hosts$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_all_hosts$rotation #for EIGEN VECTORS
+plot(pca_all_hosts, type="l") #screeplot1
+screeplot(pca_all_hosts, type="l")  #screeplot2
+#biplot(pca_all_hosts, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#z3<- predict(z2)
+pca_predictions_all_hosts <- na.omit(predict(predictors_all_hosts, pca_all_hosts, index=1:5)) #make further predictions w/ PCA results
+#so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
+plot(pca_predictions_all_hosts[,1], pca_predictions_all_hosts[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
 #SDMs using MaxEnt#####
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
@@ -660,7 +678,7 @@ p_no_host_PCA<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                     na.value = "black", limits=c(0,.95))
+                                     na.value = "black", limits=c(0,.90))
 
 #MaxEnt for Whydah with CW and PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -718,7 +736,7 @@ p_cw_PCA<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.95))
+                         na.value = "black",limits=c(0,.90))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
 
@@ -779,7 +797,7 @@ p_ocw_PCA<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.95))
+                         na.value = "black", limits=c(0,.90))
 
 #MaxEnt for Whydah with Nutmeg and PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -836,7 +854,7 @@ p_nutmeg_PCA<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.95))
+                         na.value = "black", limits=c(0,.90))
 
 #MaxEnt for Whydah with OCW AND CW PCA####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -893,9 +911,65 @@ p_ocw_and_cw_PCA<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black", limits=c(0,.95)) +
+                         na.value = "black", limits=c(0,.90)) +
   #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
+
+#MaxEnt for Whydah with all hosts PCA####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_all_hosts_pca <- maxent(pca_predictions_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+response(mx_all_hosts_pca) #response curves
+plot(mx_all_hosts_pca) #importance of each variable in building model
+
+#Model Evaluation
+e_all_hosts_pca <- evaluate(test, backg_test, mx_all_hosts_pca, pca_predictions_all_hosts) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_all_hosts_pca #shows number of presences/absences/AUC and cor
+px_all_hosts_pca <- predict(pca_predictions_all_hosts, mx_all_hosts_pca, progress= '' ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_all_hosts_pca, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_all_hosts_pca <- threshold(e_all_hosts_pca, 'spec_sens' )
+plot(px_all_hosts_pca > tr_all_hosts_pca, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_all_hosts_pca, 'ROC')
+
+#Plotting Maxent output
+map.all.hosts.pca <- rasterToPoints(px_all_hosts_pca) #make predictions raster a set of points for ggplot
+df_all_hosts_pca <- data.frame(map.all.hosts.pca) #convert to data.frame
+head(df_all_hosts_pca)
+colnames(df_all_hosts_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_all_hosts_pca$Suitability)
+
+#Now make the map
+p_all_hosts_PCA<-ggplot(data=df_all_hosts_pca, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith All Hosts and PCA") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p_all_hosts_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                        na.value = "black", limits=c(0,.90)) +
+  #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
+  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
+
 
 #MaxEnt  for Whydah - No Host species / all worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -953,10 +1027,10 @@ p_no_host_all_worldclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.95))
+                         na.value = "black",limits=c(0,.90))
 
 #values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
-#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.95)) #this one works!
+#scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.90)) #this one works!
 
 #MaxEnt for Whydah with Common Waxbill and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -1061,7 +1135,7 @@ p_ocw_all_worldclim<-ggplot(data=df_ocw_all_worldclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                          na.value = "black",limits=c(0,.95))
+                                          na.value = "black",limits=c(0,.90))
 
 #MaxEnt for Whydah with Nutmeg Mannikin and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -1118,7 +1192,7 @@ p_nutmeg_all_worldclim<-ggplot(data=df_nutmeg_all_worldclim, aes(y=lat, x=lon)) 
   )
 
 p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.95))
+                         na.value = "black",limits=c(0,.90))
 
 #MaxEnt for Whydah with OCW AND CW and ALL worldclim####
 outdir<-("~/Desktop/Whydah Project/whydah/Data")
@@ -1174,41 +1248,103 @@ p_ocw_and_cw_all_worldclim<-ggplot(data=df_ocw_and_cw_all_worldclim, aes(y=lat, 
         panel.background = element_rect(fill = 'black')
   )
 p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                         na.value = "black",limits=c(0,.95))
+                         na.value = "black",limits=c(0,.90))
 
+#MaxEnt for Whydah with all hosts and ALL worldclim####
+outdir<-("~/Desktop/Whydah Project/whydah/Data")
+occs.path<- file.path(outdir,'ptw.csv')
+#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
+dim(train) #make sure our training set is the thinned set
+mx_all_hosts_all_worldclim <- maxent(predictors_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+#additional possible arguments for maxent:
+#a = is an argument providing background points, but only works if training data isn't a vector
+#factors = are any variables categorical?
+#removeDuplicates = if true, then presence points within same raster cell are removed
+response(mx_all_hosts_all_worldclim) #response curves
+plot(mx_all_hosts_all_worldclim) #importance of each variable in building model
+
+#Model Evaluation 
+e_all_hosts_all_worldclim <- evaluate(test, backg_test, mx_all_hosts_all_worldclim, predictors_all_hosts) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_all_hosts_all_worldclim #shows number of presences/absences/AUC and cor
+px_all_hosts_all_worldclim <- predict(predictors_all_hosts, mx_all_hosts_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+par(mfrow=c(1,2))
+plot(px_all_hosts_all_worldclim, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_all_hosts_all_worldclim <- threshold(e_all_hosts_all_worldclim, 'spec_sens' )
+plot(px_all_hosts_all_worldclim > tr_all_hosts_all_worldclim, main='presence/absence')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_all_hosts_all_worldclim, 'ROC')
+
+#Plotting Maxent output
+map.all.hosts.all.worldclim <- rasterToPoints(px_all_hosts_all_worldclim) #make predictions raster a set of points for ggplot
+df_all_hosts_all_worldclim <- data.frame(map.all.hosts.all.worldclim) #convert to data.frame
+head(df_all_hosts_all_worldclim)
+colnames(df_all_hosts_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+head(thin_ptw2_coords)
+max(df_all_hosts_all_worldclim$Suitability)
+
+p_all_hosts_all_worldclim<-ggplot(data=df_all_hosts_all_worldclim, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("MaxEnt Model for Whydahs\nwith All Hosts and All WorldClim") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p_all_hosts_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                  na.value = "black",limits=c(0,.90))
 
 #Combining All MaxEnt Maps to one PDF####
 par(mfrow = c(4, 2))
-p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                na.value = "black",limits=c(0,.95))
+p_cw_PCA2 <- p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                na.value = "black",limits=c(0,.90))
 
-p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                 na.value = "black", limits=c(0,.95))
+p_ocw_PCA2 <-p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                 na.value = "black", limits=c(0,.90))
 
-p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                    na.value = "black", limits=c(0,.95))
+p_nutmeg_PCA2 <-p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                    na.value = "black", limits=c(0,.90))
 
-p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                        na.value = "black", limits=c(0,.95))
+p_ocw_and_cw_PCA2<-p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                        na.value = "black", limits=c(0,.90))
 
-p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                     na.value = "black", limits=c(0,.95))
+p_all_hosts_PCA2<-p_all_hosts_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                          na.value = "black", limits=c(0,.90))
 
-p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                             na.value = "black",limits=c(0,.95))
+p_no_host_PCA2<-p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                     na.value = "black", limits=c(0,.90))
 
-p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                         na.value = "black",limits=c(0,.95))
+p_no_host_all_worldclim2<-p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                             na.value = "black",limits=c(0,.90))
 
-p_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                        na.value = "black",limits=c(0,.95))
+p_cw_all_worldclim2 <- p_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                                 na.value = "black",limits=c(0,.90))
 
-p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                            na.value = "black",limits=c(0,.95))
+p_ocw_all_worldclim2 <- p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                         na.value = "black",limits=c(0,.90))
+
+p_nutmeg_all_worldclim2 <- p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                            na.value = "black",limits=c(0,.90))
   
-p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                na.value = "black",limits=c(0,.95))
+p_ocw_and_cw_all_worldclim2 <- p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                na.value = "black",limits=c(0,.90))
 
+p_all_hosts_all_worldclim2 <- p_all_hosts_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                 na.value = "black",limits=c(0,.90))
+
+multiplot(p_no_host_PCA2, p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_ocw_and_cw_PCA2, p_no_host_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_ocw_and_cw_all_worldclim2, cols=2)
 
 ###ENMeval###
 #enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
@@ -1252,3 +1388,41 @@ enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predicti
 
 #SAVE WORKSPACE!####
 save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
+
+##MULTIPLOT FUNCTION####
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+
