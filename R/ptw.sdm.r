@@ -1,4 +1,9 @@
-##SDM for PTW#
+########
+# Species Distribution models for Pin-Tailed Whydah
+# Written by Robert Pecchia
+# Hunter College, The City College of New York
+# Winter/Spring 2015-2016
+
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 setwd("~/Desktop/Whydah Project/whydah/Data")
@@ -381,7 +386,6 @@ points(nutmeg.unique, col="red")
 nutmeg.unique<-nutmeg.unique[complete.cases(nutmeg.unique),]
 dim(nutmeg.unique)
 
-
 #checking for any zero values
 lonzero = subset(nutmeg.unique, lon==0) #any points have longitude that was auto-set to 0
 lonzero
@@ -439,7 +443,12 @@ thin_cw2
 thin_ocw2
 thin_nutmeg2
 
+####
+
 #Preparing Presence/Absence Rasters####
+
+####
+
 #Function for Presence/Absence Rasters for Host Species by Amy Whitehead
 presence.absence.raster <- function (mask.raster,species.data,raster.label="") {
   require(raster)
@@ -492,7 +501,11 @@ pa_raster_nutmeg <- presence.absence.raster(mask.raster=myRaster, species.data=t
 pa_raster_nutmeg
 plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
 
+####
+
 #Environmental Variables####
+
+####
 # get the file names...these should be all of our our worldclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
 predictors<-stack(files)
@@ -527,7 +540,12 @@ backg_cropped<-crop(predictors_no_host,ext)
 plot(wrld_simpl,main="Background Points for MaxEnt Model\nExtent Matches Whydah Distribution")
 points(backg, cex=.3, col="purple")
 
-# Traditional PCA####
+####
+
+#Traditional PCA####
+
+####
+
 #Example from Hijmans for calculating PCA of Rasterstack
 #sr <- sampleRandom(envs.df, 1000) #could sample randomly of rasterbrick is too large
 
@@ -539,7 +557,7 @@ pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1
 pca_cw$rotation #for EIGEN VECTORS
 plot(pca_cw, type="l") #screeplot1
 screeplot(pca_cw, type="l")  #screeplot2
-#biplot(pca_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
+#biplot(pca_cw, cex=0.7) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
 #z3<- predict(z2)
 pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
@@ -611,7 +629,58 @@ pca_predictions_all_hosts <- na.omit(predict(predictors_all_hosts, pca_all_hosts
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_all_hosts[,1], pca_predictions_all_hosts[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
-#SDMs using MaxEnt#####
+
+######
+
+#ENMeval####
+
+######
+
+#enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
+#                              bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+#save(enmeval_results, file="enmeval_results.rdata")
+load("enmeval_results.rdata")
+enmeval_results
+plot(enmeval_results@predictions[[which (enmeval_results@results$delta.AICc == 0) ]])
+points(enmeval_results@occ.pts, pch=21, bg=enmeval_results@occ.grp)
+head(enmeval_results@results)
+enmeval_results@results #all the results
+Q<-enmeval_results@results#arrange by AICc value
+QQ<-as.data.frame(Q)
+head(QQ)
+QQ<-QQ[,c(1,2,3,14)]
+head(QQ)
+arrange(QQ,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
+#Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
+enmeval_results@overlap
+
+par(mfrow=c(2,2))
+eval.plot(enmeval_results@results, legend.position="topright")
+eval.plot(enmeval_results@results, "Mean.AUC", )
+eval.plot(enmeval_results@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
+eval.plot(enmeval_results@results, "Mean.ORmin")
+#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
+enmeval_results@results
+# specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
+# n.bg is The number of random background localities to draw from the study extent
+#when overlap = TRUE, provides pairwise metric of niche overlap 
+#bin.output appends evaluations metrics for each evaluation bin to results table
+
+#ENMeval for cropped rasterstak
+enmeval_results_cropped <- ENMevaluate(thin_ptw2_coords, backg_cropped, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+
+#ENMeval for PCA results
+enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+
+#ENMeval for PCA results
+enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+
+
+####
+
+#MaxEnt#####
+
+####
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
 #envs<-crop(envs,north.america)
 #Prepare Training and Testing dataset####
@@ -628,7 +697,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE', 'linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -1346,50 +1415,10 @@ p_all_hosts_all_worldclim2 <- p_all_hosts_all_worldclim + scale_fill_gradientn(c
 
 multiplot(p_no_host_PCA2, p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_ocw_and_cw_PCA2, p_no_host_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_ocw_and_cw_all_worldclim2, cols=2)
 
-###ENMeval###
-#enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
-#                              bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-#save(enmeval_results, file="enmeval_results.rdata")
-load("enmeval_results.rdata")
-enmeval_results
-plot(enmeval_results@predictions[[which (enmeval_results@results$delta.AICc == 0) ]])
-points(enmeval_results@occ.pts, pch=21, bg=enmeval_results@occ.grp)
-head(enmeval_results@results)
-enmeval_results@results #all the results
-Q<-enmeval_results@results#arrange by AICc value
-QQ<-as.data.frame(Q)
-head(QQ)
-QQ<-QQ[,c(1,2,3,14)]
-head(QQ)
-arrange(QQ,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
-#Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
-enmeval_results@overlap
-
-par(mfrow=c(2,2))
-eval.plot(enmeval_results@results, legend.position="topright")
-eval.plot(enmeval_results@results, "Mean.AUC", )
-eval.plot(enmeval_results@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
-eval.plot(enmeval_results@results, "Mean.ORmin")
-#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
-enmeval_results@results
-# specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
-# n.bg is The number of random background localities to draw from the study extent
-#when overlap = TRUE, provides pairwise metric of niche overlap 
-#bin.output appends evaluations metrics for each evaluation bin to results table
-
-#ENMeval for cropped rasterstak
-enmeval_results_cropped <- ENMevaluate(thin_ptw2_coords, backg_cropped, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-
-#ENMeval for PCA results
-enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-
-#ENMeval for PCA results
-enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-
-#SAVE WORKSPACE!####
-save.image("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
-
+#####
 ##MULTIPLOT FUNCTION####
+#####
+
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
   
@@ -1426,3 +1455,12 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
+####
+
+##Making comparisons across models
+
+####
+
+install.packages("phyloclim")
+library(phyloclim)
+?phyloclim
