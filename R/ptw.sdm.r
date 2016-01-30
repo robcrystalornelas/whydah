@@ -11,6 +11,7 @@ load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
 Sys.setenv(NOAWT=TRUE)
 library(rJava)
+install.packages("ENMeval")
 library(gurobi)
 library(spThin)
 library(ENMeval)
@@ -629,51 +630,72 @@ pca_predictions_all_hosts <- na.omit(predict(predictors_all_hosts, pca_all_hosts
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_all_hosts[,1], pca_predictions_all_hosts[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
-
 ######
-
+class(pca_predictions_worldclim_only)
 #ENMeval####
 
 ######
+#enmeval_results_worldclim <- ENMevaluate(thin_ptw2_coords, env=predictors, bg.coords = backg, n.bg = 500 ,method="block", overlap=TRUE,
+#                              bin.output=TRUE, clamp=TRUE)
+#enmeval_results_pca <- ENMevaluate(thin_ptw2_coords, env = pca_predictions_worldclim_only, bg.coords = backg, n.bg = 500 ,method="block", overlap=TRUE, bin.output=TRUE, clamp=TRUE)
+#save(enmeval_results_worldclim, file="enmeval_results_worldclim.rdata")
+#save(enmeval_results_pca, file = "enmeval_results_pca.rdata")
+load("enmeval_results_worldclim.rdata")
+load("enmeval_results_pca.rdata")
 
-#enmeval_results <- ENMevaluate(thin_ptw2_coords, , method="block", n.bg=500, overlap=TRUE,
-#                              bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-#save(enmeval_results, file="enmeval_results.rdata")
-load("enmeval_results.rdata")
-enmeval_results
-plot(enmeval_results@predictions[[which (enmeval_results@results$delta.AICc == 0) ]])
-points(enmeval_results@occ.pts, pch=21, bg=enmeval_results@occ.grp)
-head(enmeval_results@results)
-enmeval_results@results #all the results
-Q<-enmeval_results@results#arrange by AICc value
-QQ<-as.data.frame(Q)
-head(QQ)
-QQ<-QQ[,c(1,2,3,14)]
-head(QQ)
-arrange(QQ,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
+#look at ENMeval for WorldClim
+enmeval_results_worldclim
+plot(enmeval_results_worldclim@predictions[[which (enmeval_results_worldclim@results$delta.AICc == 0) ]])
+points(enmeval_results_worldclim@occ.pts, pch=21, bg=enmeval_results_worldclim@occ.grp)
+head(enmeval_results_worldclim@results)
+enmeval_results_worldclim@results #all the results
+Q_worldclim<-enmeval_results_worldclim@results#arrange by AICc value
+QQ_worldclim<-as.data.frame(Q_worldclim)
+head(QQ_worldclim)
+QQ_worldclim<-QQ_worldclim[,c(1,2,3,14)]
+head(QQ_worldclim)
+arrange(QQ_worldclim,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
 #Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
-enmeval_results@overlap
+enmeval_results_worldclim@overlap
 
 par(mfrow=c(2,2))
-eval.plot(enmeval_results@results, legend.position="topright")
-eval.plot(enmeval_results@results, "Mean.AUC", )
-eval.plot(enmeval_results@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
-eval.plot(enmeval_results@results, "Mean.ORmin")
+eval.plot(enmeval_results_worldclim@results, legend.position="topright")
+eval.plot(enmeval_results_worldclim@results, "Mean.AUC", )
+eval.plot(enmeval_results_worldclim@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
+eval.plot(enmeval_results_worldclim@results, "Mean.ORmin")
 #These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
-enmeval_results@results
+enmeval_results_worldclim@results
 # specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
 # n.bg is The number of random background localities to draw from the study extent
 #when overlap = TRUE, provides pairwise metric of niche overlap 
 #bin.output appends evaluations metrics for each evaluation bin to results table
 
-#ENMeval for cropped rasterstak
-enmeval_results_cropped <- ENMevaluate(thin_ptw2_coords, backg_cropped, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+#look at ENMeval results for PCA
+enmeval_results_worldclim
+plot(enmeval_results_worldclim@predictions[[which (enmeval_results_worldclim@results$delta.AICc == 0) ]])
+points(enmeval_results_worldclim@occ.pts, pch=21, bg=enmeval_results_worldclim@occ.grp)
+head(enmeval_results_worldclim@results)
+enmeval_results_worldclim@results #all the results
+Q_worldclim<-enmeval_results_worldclim@results#arrange by AICc value
+QQ_worldclim<-as.data.frame(Q_worldclim)
+head(QQ_worldclim)
+QQ_worldclim<-QQ_worldclim[,c(1,2,3,14)]
+head(QQ_worldclim)
+arrange(QQ_worldclim,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
+#Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
+enmeval_results_worldclim@overlap
 
-#ENMeval for PCA results
-enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
-
-#ENMeval for PCA results
-enmeval_results_pca_worldclim_only <- ENMevaluate(thin_ptw2_coords, pca_predictions_worldclim_only, method="block", n.bg=500, overlap=TRUE,bin.output=TRUE, clamp=TRUE, parallel = TRUE)
+par(mfrow=c(2,2))
+eval.plot(enmeval_results_worldclim@results, legend.position="topright")
+eval.plot(enmeval_results_worldclim@results, "Mean.AUC", )
+eval.plot(enmeval_results_worldclim@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
+eval.plot(enmeval_results_worldclim@results, "Mean.ORmin")
+#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
+enmeval_results_worldclim@results
+# specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
+# n.bg is The number of random background localities to draw from the study extent
+#when overlap = TRUE, provides pairwise metric of niche overlap 
+#bin.output appends evaluations metrics for each evaluation bin to results table
 
 
 ####
@@ -697,7 +719,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE', 'linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
+mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE', 'linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -755,7 +777,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_cw <- maxent(pca_predictions_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_cw <- maxent(pca_predictions_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -816,7 +838,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_ocw_pca <- maxent(pca_predictions_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_ocw_pca <- maxent(pca_predictions_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -873,7 +895,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_nutmeg_pca <- maxent(pca_predictions_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_nutmeg_pca <- maxent(pca_predictions_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -930,7 +952,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_ocw_and_cw_pca <- maxent(pca_predictions_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_ocw_and_cw_pca <- maxent(pca_predictions_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -989,7 +1011,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_all_hosts_pca <- maxent(pca_predictions_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_all_hosts_pca <- maxent(pca_predictions_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 response(mx_all_hosts_pca) #response curves
 plot(mx_all_hosts_pca) #importance of each variable in building model
 
@@ -1046,7 +1068,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_no_host <- maxent(predictors_no_host,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE'))
+mx_no_host <- maxent(predictors_no_host,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -1106,7 +1128,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 response(mx_cw_all_worldclim) #response curves
 plot(mx_cw_all_worldclim) #importance of each variable in building model
 
@@ -1156,7 +1178,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -1211,7 +1233,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_nutmeg_all_worldclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_nutmeg_all_worldclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -1268,7 +1290,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_ocw_and_cw_all_worldclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_ocw_and_cw_all_worldclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
@@ -1324,7 +1346,7 @@ outdir<-("~/Desktop/Whydah Project/whydah/Data")
 occs.path<- file.path(outdir,'ptw.csv')
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_all_hosts_all_worldclim <- maxent(predictors_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_all_hosts_all_worldclim <- maxent(predictors_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
 #additional possible arguments for maxent:
 #a = is an argument providing background points, but only works if training data isn't a vector
 #factors = are any variables categorical?
