@@ -7,11 +7,10 @@
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 setwd("~/Desktop/Whydah Project/whydah/Data")
-load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
+#load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
 Sys.setenv(NOAWT=TRUE)
 library(rJava)
-install.packages("ENMeval")
 library(gurobi)
 library(spThin)
 library(ENMeval)
@@ -109,7 +108,6 @@ summary(thin1)
 str(thin1)
 plot(thin1) #to visualize which records we kept after thinning
 # hexagons show the distribution of all the occurrence records and the 
-?spThin
 # red points show the location of the retained records.
 thin1@call
 
@@ -126,7 +124,10 @@ write.SpThin(
 thin_ptw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ptw2)
 thin_ptw2_coords<-thin_ptw2[,1:2]
-plot(thin_ptw2_coords)
+
+data("wrld_simpl")
+plot(wrld_simpl)
+points(thin_ptw2_coords)
 
 #calculate bounding box
 min(thin_ptw2_coords$lon)
@@ -510,7 +511,6 @@ plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
 # get the file names...these should be all of our our worldclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
 predictors<-stack(files)
-predictors #WC5 data, without waxbill
 mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since they are all from whole world)
 set.seed(1963) #makes sure we're generating random numbers
 
@@ -535,10 +535,8 @@ backg_train <- backg[group != 1, ]
 backg_test <- backg[group == 1, ]
 
 ext<-extent(-119, 55.4539,-33,23)
-#get a rasterstack that is full of cropped rasters
-backg_cropped<-crop(predictors_no_host,ext)
 
-plot(wrld_simpl,main="Background Points for MaxEnt Model\nExtent Matches Whydah Distribution")
+plot(wrld_simpl,main="Background Points with \nExtent Limited to Whydah Distribution")
 points(backg, cex=.3, col="purple")
 
 ####
@@ -555,26 +553,21 @@ pca_cw <- prcomp(na.omit(values(predictors_cw)), scale=T, center=T)
 summary(pca_cw) #prop. variance is similar to eigen value
 print(pca_cw) #this function prints loadings for each PCA
 pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_cw$rotation #for EIGEN VECTORS
+pca_cw$rotation #EIGEN VECTORS
 plot(pca_cw, type="l") #screeplot1
-screeplot(pca_cw, type="l")  #screeplot2
-#biplot(pca_cw, cex=0.7) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
 pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make further predictions w/ PCA results
+
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_cw[,1], pca_predictions_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
-
 #PCA for Orange Cheeked Waxbill Predictors
 pca_ocw <- prcomp(na.omit(values(predictors_ocw)), scale=T, center=T)
-summary(pca_cw) #prop. variance is similar to eigen value
-print(pca_cw) #this function prints loadings for each PCA
-pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+summary(pca_ocw) #prop. variance is similar to eigen value
+print(pca_ocw) #this function prints loadings for each PCA
+pca_ocw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
 pca_ocw$rotation #for EIGEN VECTORS
 plot(pca_ocw, type="l") #screeplot1
 screeplot(pca_ocw, type="l")  #screeplot2
-#biplot(pca_ocw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
 pca_predictions_ocw <- na.omit(predict(predictors_ocw, pca_ocw, index=1:4)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_ocw[,1], pca_predictions_ocw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
@@ -585,10 +578,9 @@ summary(pca_nutmeg) #prop. variance is similar to eigen value
 print(pca_nutmeg) #this function prints loadings for each PCA
 pca_nutmeg$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
 pca_nutmeg$rotation #for EIGEN VECTORS
+
 plot(pca_nutmeg, type="l") #screeplot1
 screeplot(pca_nutmeg, type="l")  #screeplot2
-#biplot(pca_nutmeg, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
 pca_predictions_nutmeg <- na.omit(predict(predictors_nutmeg, pca_nutmeg, index=1:4)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_nutmeg[,1], pca_predictions_nutmeg[,2]) #xlim=c(-12,7), ylim=c(-12,7)
@@ -631,7 +623,7 @@ pca_predictions_all_hosts <- na.omit(predict(predictors_all_hosts, pca_all_hosts
 plot(pca_predictions_all_hosts[,1], pca_predictions_all_hosts[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
 ######
-class(pca_predictions_worldclim_only)
+
 #ENMeval####
 
 ######
@@ -640,64 +632,65 @@ class(pca_predictions_worldclim_only)
 #enmeval_results_pca <- ENMevaluate(thin_ptw2_coords, env = pca_predictions_worldclim_only, bg.coords = backg, n.bg = 500 ,method="block", overlap=TRUE, bin.output=TRUE, clamp=TRUE)
 #save(enmeval_results_worldclim, file="enmeval_results_worldclim.rdata")
 #save(enmeval_results_pca, file = "enmeval_results_pca.rdata")
-load("enmeval_results_worldclim.rdata")
-load("enmeval_results_pca.rdata")
-
-#look at ENMeval for WorldClim
-enmeval_results_worldclim
-plot(enmeval_results_worldclim@predictions[[which (enmeval_results_worldclim@results$delta.AICc == 0) ]])
-points(enmeval_results_worldclim@occ.pts, pch=21, bg=enmeval_results_worldclim@occ.grp)
-head(enmeval_results_worldclim@results)
-enmeval_results_worldclim@results #all the results
-Q_worldclim<-enmeval_results_worldclim@results#arrange by AICc value
-QQ_worldclim<-as.data.frame(Q_worldclim)
-head(QQ_worldclim)
-QQ_worldclim<-QQ_worldclim[,c(1,2,3,14)]
-head(QQ_worldclim)
-arrange(QQ_worldclim,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
-#Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
-enmeval_results_worldclim@overlap
-
-par(mfrow=c(2,2))
-eval.plot(enmeval_results_worldclim@results, legend.position="topright")
-eval.plot(enmeval_results_worldclim@results, "Mean.AUC", )
-eval.plot(enmeval_results_worldclim@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
-eval.plot(enmeval_results_worldclim@results, "Mean.ORmin")
-#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
-enmeval_results_worldclim@results
+# load("enmeval_results_worldclim.rdata")
+# load("enmeval_results_pca.rdata")
+# 
+# #look at ENMeval for WorldClim
+# enmeval_results_worldclim
+# plot(enmeval_results_worldclim@predictions[[which (enmeval_results_worldclim@results$delta.AICc == 0) ]])
+# points(enmeval_results_worldclim@occ.pts, pch=21, bg=enmeval_results_worldclim@occ.grp)
+# head(enmeval_results_worldclim@results)
+# enmeval_results_worldclim@results #all the results
+# Q_worldclim<-enmeval_results_worldclim@results#arrange by AICc value
+# QQ_worldclim<-as.data.frame(Q_worldclim)
+# head(QQ_worldclim)
+# QQ_worldclim<-QQ_worldclim[,c(1,2,3,14)]
+# head(QQ_worldclim)
+# arrange(QQ_worldclim,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
+# #Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
+# enmeval_results_worldclim@overlap
+# 
+# #Very important figures
+# par(mfrow=c(2,2))
+# eval.plot(enmeval_results_worldclim@results, legend.position="topright")
+# eval.plot(enmeval_results_worldclim@results, "Mean.AUC", )
+# eval.plot(enmeval_results_worldclim@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
+# eval.plot(enmeval_results_worldclim@results, "Mean.ORmin")
+# 
+# enmeval_results_worldclim@results
 # specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
 # n.bg is The number of random background localities to draw from the study extent
 #when overlap = TRUE, provides pairwise metric of niche overlap 
 #bin.output appends evaluations metrics for each evaluation bin to results table
 
 #look at ENMeval results for PCA
-enmeval_results_worldclim
-plot(enmeval_results_worldclim@predictions[[which (enmeval_results_worldclim@results$delta.AICc == 0) ]])
-points(enmeval_results_worldclim@occ.pts, pch=21, bg=enmeval_results_worldclim@occ.grp)
-head(enmeval_results_worldclim@results)
-enmeval_results_worldclim@results #all the results
-Q_worldclim<-enmeval_results_worldclim@results#arrange by AICc value
-QQ_worldclim<-as.data.frame(Q_worldclim)
-head(QQ_worldclim)
-QQ_worldclim<-QQ_worldclim[,c(1,2,3,14)]
-head(QQ_worldclim)
-arrange(QQ_worldclim,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
-#Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
-enmeval_results_worldclim@overlap
-
-par(mfrow=c(2,2))
-eval.plot(enmeval_results_worldclim@results, legend.position="topright")
-eval.plot(enmeval_results_worldclim@results, "Mean.AUC", )
-eval.plot(enmeval_results_worldclim@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
-eval.plot(enmeval_results_worldclim@results, "Mean.ORmin")
-#These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
-enmeval_results_worldclim@results
-# specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
-# n.bg is The number of random background localities to draw from the study extent
-#when overlap = TRUE, provides pairwise metric of niche overlap 
-#bin.output appends evaluations metrics for each evaluation bin to results table
-
-
+# enmeval_results_pca
+# plot(enmeval_results_pca@predictions[[which (enmeval_results_pca@results$delta.AICc == 0) ]])
+# points(enmeval_results_pca@occ.pts, pch=21, bg=enmeval_results_pca@occ.grp)
+# head(enmeval_results_pca@results)
+# enmeval_results_pca@results #all the results
+# Q_pca<-enmeval_results_pca@results#arrange by AICc value
+# QQ_pca<-as.data.frame(Q_pca)
+# head(QQ_pca)
+# QQ_pca<-QQ_pca[,c(1,2,3,14)]
+# head(QQ_pca)
+# arrange(QQ_pca,AICc,settings,features,rm) #this will sort ENMeval results so that we can see exact settings for model with lowest AICc
+# #Shows that model with LQ ranging from .5-4.0 all had the lowest AICc
+# enmeval_results_pca@overlap
+# ?ENMeval
+# par(mfrow=c(2,2))
+# eval.plot(enmeval_results_pca@results, legend.position="topright")
+# eval.plot(enmeval_results_pca@results, "Mean.AUC", )
+# eval.plot(enmeval_results_pca@results, "Mean.AUC.DIFF", variance="Var.AUC.DIFF")
+# eval.plot(enmeval_results_pca@results, "Mean.ORmin")
+# #These figures are key /\.  We should relect RM and Model Setting from key when deta.AUCc is below 2
+# enmeval_results_pca@results
+# # specify how data should be partitioned w/ method="jackknife", "randomkfold", "user", "block", "checkerboard1", "checkerboard2".
+# # n.bg is The number of random background localities to draw from the study extent
+# #when overlap = TRUE, provides pairwise metric of niche overlap 
+# #bin.output appends evaluations metrics for each evaluation bin to results table
+# 
+# 
 ####
 
 #MaxEnt#####
@@ -705,6 +698,7 @@ enmeval_results_worldclim@results
 ####
 #envs<-mask(envs,north.america) #mask makes all enviro cells with no data NA
 #envs<-crop(envs,north.america)
+
 #Prepare Training and Testing dataset####
 folds<-kfold(thin_ptw2_coords, k=4) #this is a 4 fold test
 train<-thin_ptw2_coords[folds>1,] #training has 75% of points
@@ -719,11 +713,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE', 'linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_pca_only <- maxent(pca_predictions_worldclim_only,train,a=backg_train,args=c('betamultiplier=1.5','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_pca_only) #response curves
 plot(mx_pca_only) #importance of each variable in building model
 
@@ -777,11 +767,7 @@ occs.path<- file.path(outdir,'ptw.csv')
 write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
 #extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
 dim(train) #make sure our training set is the thinned set
-mx_cw <- maxent(pca_predictions_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_cw <- maxent(pca_predictions_cw,train,a=backg_train,args=c('betamultiplier=1.5','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_cw) #response curves
 plot(mx_cw) #importance of each variable in building model
 
@@ -829,20 +815,8 @@ p_cw_PCA<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
 p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black",limits=c(0,.90))
 
-#values=c(0,0.1,seq(0.100,1,length.out=7)) #I think above map is good!, can insert this if we want to change spacing
-
-
 #MaxEnt for Whydah with OCW and PCA####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_ocw_pca <- maxent(pca_predictions_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_ocw_pca <- maxent(pca_predictions_ocw,train,a=backg_train,args=c('betamultiplier=1.5','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_ocw_pca) #response curves
 plot(mx_ocw_pca) #importance of each variable in building model
 
@@ -891,15 +865,7 @@ p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkol
                          na.value = "black", limits=c(0,.90))
 
 #MaxEnt for Whydah with Nutmeg and PCA####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_nutmeg_pca <- maxent(pca_predictions_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_nutmeg_pca <- maxent(pca_predictions_nutmeg,train,a=backg_train,args=c('betamultiplier=1.5','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_nutmeg_pca) #response curves
 plot(mx_nutmeg_pca) #importance of each variable in building model
 
@@ -922,9 +888,9 @@ plot(e_nutmeg, 'ROC')
 map.nutmeg.pca <- rasterToPoints(px_nutmeg_pca) #make predictions raster a set of points for ggplot
 df_nutmeg_pca <- data.frame(map.nutmeg.pca) #convert to data.frame
 head(df_nutmeg_pca)
-colnames(df_nutmeg_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+colnames(df_nutmeg_pca) <- c('lon', 'lat', 'Suitability') #column headings
 head(thin_ptw2_coords)
-max(df_nutmeg_pca$Suitability) #The max suitability score is only .579
+max(df_nutmeg_pca$Suitability) 
 
 #Now make the map
 p_nutmeg_PCA<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
@@ -948,15 +914,7 @@ p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","dar
                          na.value = "black", limits=c(0,.90))
 
 #MaxEnt for Whydah with OCW AND CW PCA####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_ocw_and_cw_pca <- maxent(pca_predictions_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_ocw_and_cw_pca <- maxent(pca_predictions_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=1.5','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_ocw_and_cw_pca) #response curves
 plot(mx_ocw_and_cw_pca) #importance of each variable in building model
 
@@ -1004,14 +962,10 @@ p_ocw_and_cw_PCA<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
 p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.90)) +
   #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
-  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
+  #coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
 
 #MaxEnt for Whydah with all hosts PCA####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_all_hosts_pca <- maxent(pca_predictions_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
+mx_all_hosts_pca <- maxent(pca_predictions_all_hosts,train,a=backg_train,args=c('betamultiplier=1.5','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_all_hosts_pca) #response curves
 plot(mx_all_hosts_pca) #importance of each variable in building model
 
@@ -1057,22 +1011,10 @@ p_all_hosts_PCA<-ggplot(data=df_all_hosts_pca, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 p_all_hosts_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                        na.value = "black", limits=c(0,.90)) +
-  #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
-  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
-
+                                        na.value = "black", limits=c(0,.90))
 
 #MaxEnt  for Whydah - No Host species / all worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-write.csv(thin_ptw2_coords,occs.path) #write a CSV of our occurrence points
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_no_host <- maxent(predictors_no_host,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_no_host <- maxent(predictors_no_host,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_no_host) #response curves
 plot(mx_no_host) #importance of each variable in building model
 
@@ -1124,14 +1066,9 @@ p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","
 #scale_fill_gradient(low="wheat1", high="red1", limits=c(0,.90)) #this one works!
 
 #MaxEnt for Whydah with Common Waxbill and ALL worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
+mx_cw_all_worldclim <- maxent(predictors_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_cw_all_worldclim) #response curves
 plot(mx_cw_all_worldclim) #importance of each variable in building model
-
 #Model Evaluation 
 e_cw_all_worldclim <- evaluate(test, backg_test, mx_cw_all_worldclim, predictors_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
 e_cw_all_worldclim #shows number of presences/absences/AUC and cor
@@ -1173,16 +1110,12 @@ p_cw_all_worldclim<-ggplot(data=df_cw_all_worldclim, aes(y=lat, x=lon)) +
         panel.background = element_rect(fill = 'black')
   )
 
+p_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                          na.value = "black",limits=c(0,.90))
+
+
 #MaxEnt for Whydah with OCW and ALL worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_ocw_all_worldclim <- maxent(predictors_ocw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_ocw_all_worldclim <- maxent(predictors_ocw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_ocw_all_worldclim) #response curves
 plot(mx_ocw_all_worldclim) #importance of each variable in building model
 
@@ -1229,15 +1162,7 @@ p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan
                                           na.value = "black",limits=c(0,.90))
 
 #MaxEnt for Whydah with Nutmeg Mannikin and ALL worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_nutmeg_all_worldclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_nutmeg_all_worldclim <- maxent(predictors_nutmeg,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_nutmeg_all_worldclim) #response curves
 plot(mx_nutmeg_all_worldclim) #importance of each variable in building model
 
@@ -1286,15 +1211,7 @@ p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","c
                          na.value = "black",limits=c(0,.90))
 
 #MaxEnt for Whydah with OCW AND CW and ALL worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_ocw_and_cw_all_worldclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_ocw_and_cw_all_worldclim <- maxent(predictors_ocw_and_cw,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_ocw_and_cw_all_worldclim) #response curves
 plot(mx_ocw_and_cw_all_worldclim) #importance of each variable in building model
 
@@ -1342,15 +1259,7 @@ p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1
                          na.value = "black",limits=c(0,.90))
 
 #MaxEnt for Whydah with all hosts and ALL worldclim####
-outdir<-("~/Desktop/Whydah Project/whydah/Data")
-occs.path<- file.path(outdir,'ptw.csv')
-#extr <- extract(envs[[1]],occs) #vector of positions where we have occurrence points
-dim(train) #make sure our training set is the thinned set
-mx_all_hosts_all_worldclim <- maxent(predictors_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE','linear=TRUE','quadratic=TRUE','product=FALSE','hinge=FALSE','threshold=FALSE'))
-#additional possible arguments for maxent:
-#a = is an argument providing background points, but only works if training data isn't a vector
-#factors = are any variables categorical?
-#removeDuplicates = if true, then presence points within same raster cell are removed
+mx_all_hosts_all_worldclim <- maxent(predictors_all_hosts,train,a=backg_train,args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 response(mx_all_hosts_all_worldclim) #response curves
 plot(mx_all_hosts_all_worldclim) #importance of each variable in building model
 
@@ -1436,6 +1345,7 @@ p_all_hosts_all_worldclim2 <- p_all_hosts_all_worldclim + scale_fill_gradientn(c
                                                  na.value = "black",limits=c(0,.90))
 
 multiplot(p_no_host_PCA2, p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_ocw_and_cw_PCA2, p_no_host_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_ocw_and_cw_all_worldclim2, cols=2)
+dev.off()
 
 #####
 ##MULTIPLOT FUNCTION####
