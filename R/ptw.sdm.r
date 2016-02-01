@@ -6,6 +6,7 @@
 
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
+#install.packages("ggbiplot")
 setwd("~/Desktop/Whydah Project/whydah/Data")
 #load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
@@ -29,6 +30,8 @@ library(dplyr)
 library(tmap)
 library(scales)
 library(ecospat)
+library(ggbiplot)
+
 
 #Full occurrence dataset####
 #ptw<-gbif('Vidua', 'macroura', geo=T, removeZeros = T)
@@ -548,6 +551,16 @@ points(backg, cex=.3, col="purple")
 #Example from Hijmans for calculating PCA of Rasterstack
 #sr <- sampleRandom(envs.df, 1000) #could sample randomly of rasterbrick is too large
 
+#PCA with just worldclim
+#results are pretty much the same as with waxbills except axis 4!
+pca_worldclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
+summary(pca_worldclim_only) #prop. variance is similar to eigen value
+print(pca_worldclim_only) #this function prints loadings for each PCA
+pca_worldclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
+pca_worldclim_only$rotation #for EIGEN VECTORS
+pca_predictions_worldclim_only <- na.omit(predict(predictors, pca_worldclim_only, index=1:4)) 
+
+
 #PCA for Common Waxbill Predictors
 pca_cw <- prcomp(na.omit(values(predictors_cw)), scale=T, center=T)
 summary(pca_cw) #prop. variance is similar to eigen value
@@ -556,6 +569,12 @@ pca_cw$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1
 pca_cw$rotation #EIGEN VECTORS
 plot(pca_cw, type="l") #screeplot1
 pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make further predictions w/ PCA results
+
+#Creating Biplots (but they're really cluttered)
+# library("devtools")
+# install_github("kassambara/factoextra")
+# library(factoextra)
+# fviz_pca_biplot(pca_cw)
 
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_cw[,1], pca_predictions_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
@@ -593,20 +612,10 @@ pca_ocw_and_cw$sdev^2 #but this truly gives our eigen values for each PC.  Sugge
 pca_ocw_and_cw$rotation #for EIGEN VECTORS
 plot(pca_ocw_and_cw, type="l") #screeplot1
 screeplot(pca_ocw_and_cw, type="l")  #screeplot2
-#biplot(pca_ocw_and_cw, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
+
 pca_predictions_ocw_and_cw <- na.omit(predict(predictors_ocw_and_cw, pca_ocw_and_cw, index=1:5)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_ocw_and_cw[,1], pca_predictions_ocw_and_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
-
-#PCA with just worldclim
-#results are pretty much the same as with waxbills except axis 4!
-pca_worldclim_only <- prcomp(na.omit(values(predictors)), scale=T, center=T)
-summary(pca_worldclim_only) #prop. variance is similar to eigen value
-print(pca_worldclim_only) #this function prints loadings for each PCA
-pca_worldclim_only$sdev^2 #but this truly gives our eigen values for each PC.  Suggests PC 1-4
-pca_worldclim_only$rotation #for EIGEN VECTORS
-pca_predictions_worldclim_only <- na.omit(predict(predictors, pca_worldclim_only, index=1:4)) 
 
 #PCA for all hosts
 pca_all_hosts <- prcomp(na.omit(values(predictors_all_hosts)), scale=T, center=T)
@@ -616,8 +625,7 @@ pca_all_hosts$sdev^2 #but this truly gives our eigen values for each PC.  Sugges
 pca_all_hosts$rotation #for EIGEN VECTORS
 plot(pca_all_hosts, type="l") #screeplot1
 screeplot(pca_all_hosts, type="l")  #screeplot2
-#biplot(pca_all_hosts, cex=0.7, choices=c(1:2)) #Making a biplot, can used choices=c(...) to specify which axes we're looking at
-#z3<- predict(z2)
+
 pca_predictions_all_hosts <- na.omit(predict(predictors_all_hosts, pca_all_hosts, index=1:5)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_all_hosts[,1], pca_predictions_all_hosts[,2]) #xlim=c(-12,7), ylim=c(-12,7)
@@ -910,6 +918,7 @@ p_nutmeg_PCA<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
+
 p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.90))
 
@@ -1386,8 +1395,6 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
     }
   }
 }
-
-####
 
 ##Making comparisons across models
 
