@@ -560,6 +560,10 @@ pca_worldclim_only$sdev^2 #but this truly gives our eigen values for each PC.  S
 pca_worldclim_only$rotation #for EIGEN VECTORS
 pca_predictions_worldclim_only <- na.omit(predict(predictors, pca_worldclim_only, index=1:4)) 
 
+fviz_pca_var(pca_worldclim_only, col.var="steelblue")+
+  theme_minimal() + 
+  labs(title = "Principal Component Analysis for Environmental Data", x = "PC1", y ="PC2" )
+
 
 #PCA for Common Waxbill Predictors
 pca_cw <- prcomp(na.omit(values(predictors_cw)), scale=T, center=T)
@@ -573,8 +577,13 @@ pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make f
 #Creating Biplots (but they're really cluttered)
 # library("devtools")
 # install_github("kassambara/factoextra")
-# library(factoextra)
-# fviz_pca_biplot(pca_cw)
+library(factoextra)
+fviz_pca_var(pca_cw, col.var="steelblue")+
+  theme_minimal() + 
+  labs(title = "Principal Component Analysis for WorldClim & Waxbill Data", x = "PC1", y ="PC2" )
+
+fviz_pca_var(pca_cw, select.var = list(contrib = 5)) #select the top 5 contributors
+
 
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_cw[,1], pca_predictions_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
