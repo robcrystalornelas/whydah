@@ -7,6 +7,8 @@
 #install.packages(c("spThin","ENMeval","dismo","rJava","jsonlite","fields","maptools","devtools","scales","dplyr","ecospat"))
 #install.packages('/Library/gurobi650/mac64/R/gurobi_6.5-0.tgz', repos=NULL)
 #install.packages("ggbiplot")
+#install.packages("gridExtra)
+#install.packages("phyloclim")
 setwd("~/Desktop/Whydah Project/whydah/Data")
 #load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
@@ -31,6 +33,8 @@ library(tmap)
 library(scales)
 library(ecospat)
 library(ggbiplot)
+library(gridExtra)
+library(phyloclim)
 
 
 #Full occurrence dataset####
@@ -560,10 +564,12 @@ pca_worldclim_only$sdev^2 #but this truly gives our eigen values for each PC.  S
 pca_worldclim_only$rotation #for EIGEN VECTORS
 pca_predictions_worldclim_only <- na.omit(predict(predictors, pca_worldclim_only, index=1:4)) 
 
-fviz_pca_var(pca_worldclim_only, col.var="steelblue")+
+biplot_for_climate_only<-fviz_pca_var(pca_worldclim_only, col.var="steelblue")+
   theme_minimal() + 
-  labs(title = "Principal Component Analysis for Environmental Data", x = "PC1", y ="PC2" )
-
+  theme(plot.title = element_text(size = rel(1.75))) +
+  labs(title = "Principal Component Analysis for Environmental Data", x = "PC1", y ="PC2" ) +
+  coord_fixed()
+biplot_for_climate_only
 
 #PCA for Common Waxbill Predictors
 pca_cw <- prcomp(na.omit(values(predictors_cw)), scale=T, center=T)
@@ -578,11 +584,13 @@ pca_predictions_cw <- na.omit(predict(predictors_cw, pca_cw, index=1:4)) #make f
 # library("devtools")
 # install_github("kassambara/factoextra")
 library(factoextra)
-fviz_pca_var(pca_cw, col.var="steelblue")+
-  theme_minimal() + 
-  labs(title = "Principal Component Analysis for WorldClim & Waxbill Data", x = "PC1", y ="PC2" )
 
-fviz_pca_var(pca_cw, select.var = list(contrib = 5)) #select the top 5 contributors
+biplot_for_climate_and_cw<-fviz_pca_var(pca_cw, col.var="steelblue")+
+  theme_minimal() + 
+  theme(plot.title = element_text(size = rel(1.75))) +
+  labs(title = "Principal Component Analysis for Environmetal Data \nand Common Waxbill", x = "PC1", y ="PC2" ) +
+  coord_fixed()
+biplot_for_climate_and_cw
 
 
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
@@ -626,6 +634,13 @@ pca_predictions_ocw_and_cw <- na.omit(predict(predictors_ocw_and_cw, pca_ocw_and
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_ocw_and_cw[,1], pca_predictions_ocw_and_cw[,2]) #xlim=c(-12,7), ylim=c(-12,7)
 
+biplot_for_native_hosts<-fviz_pca_var(pca_ocw_and_cw, col.var="steelblue")+
+  theme_minimal() + 
+  theme(plot.title = element_text(size = rel(1.75))) +
+  labs(title = "Principal Component Analysis for Environmetal Data \nand Native Hosts", x = "PC1", y ="PC2" ) +
+  coord_fixed()
+biplot_for_native_hosts
+
 #PCA for all hosts
 pca_all_hosts <- prcomp(na.omit(values(predictors_all_hosts)), scale=T, center=T)
 summary(pca_all_hosts) #prop. variance is similar to eigen value
@@ -638,6 +653,13 @@ screeplot(pca_all_hosts, type="l")  #screeplot2
 pca_predictions_all_hosts <- na.omit(predict(predictors_all_hosts, pca_all_hosts, index=1:5)) #make further predictions w/ PCA results
 #so this should be result in a (raster stack? df?) of 4 PCs...then put into maxEnt
 plot(pca_predictions_all_hosts[,1], pca_predictions_all_hosts[,2]) #xlim=c(-12,7), ylim=c(-12,7)
+
+biplot_for_all_hosts<-fviz_pca_var(pca_all_hosts, col.var="steelblue")+
+  theme_minimal() + 
+  theme(plot.title = element_text(size = rel(1.75))) +
+  labs(title = "Principal Component Analysis for Environmetal Data \nand All Hosts", x = "PC1", y ="PC2" ) +
+  coord_fixed()
+biplot_for_all_hosts
 
 ######
 
@@ -756,6 +778,9 @@ head(df_pca_bio_only)
 colnames(df_pca_bio_only) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_pca_bio_only$Suitability)
+plot(wrld_simpl)
+points(filter(df_pca_bio_only, Suitability >= .72))
+
 
 #Now make the map
 p_no_host_PCA<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
@@ -763,7 +788,7 @@ p_no_host_PCA<-ggplot(data=df_pca_bio_only, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith No Hosts and PCA") +
+  ggtitle("PCA and No Hosts") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -810,6 +835,8 @@ head(df_cw)
 colnames(df_cw) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_cw$Suitability)
+plot(wrld_simpl)
+points(filter(df_cw, Suitability >= .65))
 
 #Now make the map
 p_cw_PCA<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
@@ -817,7 +844,7 @@ p_cw_PCA<-ggplot(data=df_cw, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills and PCA") +
+  ggtitle("PCA and Common Waxbill") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -859,6 +886,8 @@ head(df_ocw_pca)
 colnames(df_ocw_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_ocw_pca$Suitability)
+plot(wrld_simpl)
+points(filter(df_ocw_pca, Suitability >= .80), col="red")
 
 #Now make the map
 p_ocw_PCA<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
@@ -866,7 +895,7 @@ p_ocw_PCA<-ggplot(data=df_ocw_pca, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Orange Cheeked Waxbills and PCA") +
+  ggtitle("PCA and Orange-cheeked Waxbills") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -908,6 +937,8 @@ head(df_nutmeg_pca)
 colnames(df_nutmeg_pca) <- c('lon', 'lat', 'Suitability') #column headings
 head(thin_ptw2_coords)
 max(df_nutmeg_pca$Suitability) 
+plot(wrld_simpl)
+points(filter(df_nutmeg_pca, Suitability >= .85), col="red")
 
 #Now make the map
 p_nutmeg_PCA<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
@@ -915,7 +946,7 @@ p_nutmeg_PCA<-ggplot(data=df_nutmeg_pca, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Nutmeg Mannikins and PCA") +
+  ggtitle("PCA and Nutmeg Mannikins") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -958,6 +989,8 @@ head(df_ocw_and_cw_pca)
 colnames(df_ocw_and_cw_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_ocw_and_cw_pca$Suitability)
+plot(wrld_simpl)
+points(filter(df_ocw_and_cw_pca, Suitability >= .85), col="red")
 
 #Now make the map
 p_ocw_and_cw_PCA<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
@@ -965,7 +998,7 @@ p_ocw_and_cw_PCA<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Native Hosts and PCA") +
+  ggtitle("PCA and Native Hosts") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1009,6 +1042,8 @@ head(df_all_hosts_pca)
 colnames(df_all_hosts_pca) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_all_hosts_pca$Suitability)
+plot(wrld_simpl)
+points(filter(df_all_hosts_pca, Suitability >= .80), col="red")
 
 #Now make the map
 p_all_hosts_PCA<-ggplot(data=df_all_hosts_pca, aes(y=lat, x=lon)) +
@@ -1016,7 +1051,7 @@ p_all_hosts_PCA<-ggplot(data=df_all_hosts_pca, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith All Hosts and PCA") +
+  ggtitle("PCA and All Hosts") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1058,6 +1093,8 @@ head(df_no_host)
 colnames(df_no_host) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_no_host$Suitability)
+plot(wrld_simpl)
+points(filter(df_no_host, Suitability >= .70), col="red")
 
 #Now make the map
 p_no_host_all_worldclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
@@ -1065,7 +1102,7 @@ p_no_host_all_worldclim <- ggplot(data=df_no_host, aes(y=lat, x=lon)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith No Hosts and all WorldClim") +
+  ggtitle("WorldClim and No Hosts") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1109,13 +1146,15 @@ head(df_cw_all_worldclim)
 colnames(df_cw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_cw_all_worldclim$Suitability)
+plot(wrld_simpl)
+points(filter(df_cw_all_worldclim, Suitability >= .70), col="red")
 
 p_cw_all_worldclim<-ggplot(data=df_cw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Common Waxbills and all WorldClim") +
+  ggtitle("WorldClim and Common Waxbill") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1158,13 +1197,15 @@ head(df_ocw_all_worldclim)
 colnames(df_ocw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_ocw_all_worldclim$Suitability)
+plot(wrld_simpl)
+points(filter(df_ocw_all_worldclim, Suitability >= .72), col="red")
 
 p_ocw_all_worldclim<-ggplot(data=df_ocw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Orange CheekedWaxbills and all WorldClim") +
+  ggtitle("WorldClim and Orange-cheeked Waxbill") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1206,13 +1247,15 @@ head(df_nutmeg_all_worldclim)
 colnames(df_nutmeg_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_nutmeg_all_worldclim$Suitability)
+plot(wrld_simpl)
+points(filter(df_nutmeg_all_worldclim, Suitability >= .80), col="red")
 
 p_nutmeg_all_worldclim<-ggplot(data=df_nutmeg_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Nutmeg Mannikin and all WorldClim") +
+  ggtitle("WorldClim and Nutmeg Mannikin") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1255,13 +1298,16 @@ head(df_ocw_and_cw_all_worldclim)
 colnames(df_ocw_and_cw_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_ocw_and_cw_all_worldclim$Suitability)
+plot(wrld_simpl)
+points(filter(df_ocw_and_cw_all_worldclim, Suitability >= .75), col="red")
+
 
 p_ocw_and_cw_all_worldclim<-ggplot(data=df_ocw_and_cw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith Native Hosts and all WorldClim") +
+  ggtitle("WorldClim and Native Hosts") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1303,13 +1349,15 @@ head(df_all_hosts_all_worldclim)
 colnames(df_all_hosts_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 head(thin_ptw2_coords)
 max(df_all_hosts_all_worldclim$Suitability)
+plot(wrld_simpl)
+points(filter(df_all_hosts_all_worldclim, Suitability >= .78), col="red")
 
 p_all_hosts_all_worldclim<-ggplot(data=df_all_hosts_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("MaxEnt Model for Whydahs\nwith All Hosts and All WorldClim") +
+  ggtitle("WorldClim and All Hosts") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1324,91 +1372,82 @@ p_all_hosts_all_worldclim<-ggplot(data=df_all_hosts_all_worldclim, aes(y=lat, x=
 p_all_hosts_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                   na.value = "black",limits=c(0,.90))
 
+
 #Combining All MaxEnt Maps to one PDF####
-par(mfrow = c(4, 2))
 p_cw_PCA2 <- p_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                 na.value = "black",limits=c(0,.90))
+
 
 p_ocw_PCA2 <-p_ocw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                  na.value = "black", limits=c(0,.90))
 
+
 p_nutmeg_PCA2 <-p_nutmeg_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                    na.value = "black", limits=c(0,.90))
+                                    na.value = "black", limits=c(0,.90)) 
+
 
 p_ocw_and_cw_PCA2<-p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                        na.value = "black", limits=c(0,.90))
+                                        na.value = "black", limits=c(0,.90)) 
+
 
 p_all_hosts_PCA2<-p_all_hosts_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                          na.value = "black", limits=c(0,.90))
+                                                          na.value = "black", limits=c(0,.90)) 
+
 
 p_no_host_PCA2<-p_no_host_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                      na.value = "black", limits=c(0,.90))
 
+
 p_no_host_all_worldclim2<-p_no_host_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                              na.value = "black",limits=c(0,.90))
+
 
 p_cw_all_worldclim2 <- p_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                                  na.value = "black",limits=c(0,.90))
 
+
 p_ocw_all_worldclim2 <- p_ocw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                         na.value = "black",limits=c(0,.90))
+                                         na.value = "black",limits=c(0,.90)) 
+
 
 p_nutmeg_all_worldclim2 <- p_nutmeg_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                             na.value = "black",limits=c(0,.90))
+
   
 p_ocw_and_cw_all_worldclim2 <- p_ocw_and_cw_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                na.value = "black",limits=c(0,.90))
+                                                na.value = "black",limits=c(0,.90)) 
 
 p_all_hosts_all_worldclim2 <- p_all_hosts_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                  na.value = "black",limits=c(0,.90))
 
-multiplot(p_no_host_PCA2, p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_ocw_and_cw_PCA2, p_no_host_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_ocw_and_cw_all_worldclim2, cols=2)
-dev.off()
-
-#####
-##MULTIPLOT FUNCTION####
-#####
-
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-  library(grid)
-  
-  # Make a list from the ... arguments and plotlist
-  plots <- c(list(...), plotlist)
-  
-  numPlots = length(plots)
-  
-  # If layout is NULL, then use 'cols' to determine layout
-  if (is.null(layout)) {
-    # Make the panel
-    # ncol: Number of columns of plots
-    # nrow: Number of rows needed, calculated from # of cols
-    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
-                     ncol = cols, nrow = ceiling(numPlots/cols))
-  }
-  
-  if (numPlots==1) {
-    print(plots[[1]])
-    
-  } else {
-    # Set up the page
-    grid.newpage()
-    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-    
-    # Make each plot, in the correct location
-    for (i in 1:numPlots) {
-      # Get the i,j matrix positions of the regions that contain this subplot
-      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-      
-      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                      layout.pos.col = matchidx$col))
-    }
-  }
-}
-
-##Making comparisons across models
 
 ####
 
-install.packages("phyloclim")
-library(phyloclim)
-?phyloclim
+# Making grouped plots
+
+####
+#grid.arrange(p_no_host_PCA2, p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_ocw_and_cw_PCA2, p_no_host_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_ocw_and_cw_all_worldclim2)
+#Grouped by PCA
+grid_arrange_shared_legend(p_all_hosts_PCA2, p_ocw_and_cw_PCA2,p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_no_host_PCA2)
+grid_arrange_shared_legend(p_all_hosts_all_worldclim2, p_ocw_and_cw_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_no_host_all_worldclim2)
+
+#Grouped by WorldClim
+grid.arrange(biplot_for_climate_only,biplot_for_climate_and_cw,biplot_for_native_hosts,biplot_for_all_hosts)
+
+#####
+
+# Grid Arrange Share Legend Function
+
+#####
+grid_arrange_shared_legend <- function(...) {
+  plots <- list(...)
+  g <- ggplotGrob(plots[[1]] + theme(legend.position="bottom"))$grobs
+  legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
+  lheight <- sum(legend$height)
+  grid.arrange(
+    do.call(arrangeGrob, lapply(plots, function(x)
+      x + theme(legend.position="none"))),
+    legend,
+    ncol = 1,
+    heights = unit.c(unit(1, "npc") - lheight, lheight))
+}
