@@ -35,6 +35,7 @@ library(ecospat)
 library(ggbiplot)
 library(gridExtra)
 library(phyloclim)
+library(scales)
 
 
 #Full occurrence dataset####
@@ -53,15 +54,17 @@ head(ptw.unique)
 # Removing outliers
 unique(ptw.unique$country) #Remove Taiwan Whydahs
 ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.
-# From many years ago, and not over a consistent amount of years
-# click()
+ptw.unique<-filter(ptw.unique, country !=c("United Arab Emirates"))
+
 filter(ptw.unique, lon<(-80) & lat>30 & country=="United States") #find Chicago point
 which(ptw.unique$lon == -82.9989, ptw.unique$lat== 39.96110) #find it in the data.frame
-ptw.unique<- ptw.unique[-4493,] #remove that row!
+ptw.unique<- ptw.unique[-4522,] #remove that row!
 
 filter(ptw.unique, lon<(-122) & lat>35 & country=="United States") #find San Fran point
 which(ptw.unique$lon == -122.511, ptw.unique$lat== 37.7777)
 ptw.unique<-ptw.unique[-1312,] #remove san fran point
+
+
 
 # only complete cases
 ptw.unique<-ptw.unique[complete.cases(ptw.unique),]
@@ -77,7 +80,6 @@ dim(ptw.unique)
 # Clean/Organize Data####
 lonzero = subset(ptw.unique, lon==0) #any points have longitude that was auto-set to 0
 lonzero #All OK
-duplicated(ptw.unique) #any duplicates?
 
 # cross checking our occurence points by means of a spatial query####
 # countries<-getData("countries") #maps we used in this exercise were a bit crude, so can use
@@ -112,12 +114,6 @@ thin1 <-spThin(
   method= "gurobi", #can change to "gurobi" to make it even faster, but have to install it first
   great.circle.distance=TRUE)
 summary(thin1)
-str(thin1)
-plot(thin1) #to visualize which records we kept after thinning
-# hexagons show the distribution of all the occurrence records and the 
-# red points show the location of the retained records.
-thin1@call
-
 
 # Saving the thinned file####
 # print temporary dir
@@ -131,10 +127,6 @@ write.SpThin(
 thin_ptw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ptw2)
 thin_ptw2_coords<-thin_ptw2[,1:2]
-
-data("wrld_simpl")
-plot(wrld_simpl)
-points(thin_ptw2_coords)
 
 #calculate bounding box
 min(thin_ptw2_coords$lon)
@@ -445,16 +437,9 @@ head(thin_nutmeg2) #Always check to make sure this shows correct species
 # Back to data directory one more time
 setwd("~/Desktop/Whydah Project/whydah/Data")
 
-# setting up background points according to Hijmans and Elith####
-# Also, we have our thinned occurrence sets
-thin_ptw2
-thin_cw2
-thin_ocw2
-thin_nutmeg2
-
 ####
 
-#Preparing Presence/Absence Rasters####
+#Preparing Presence/Absence Rasters
 
 ####
 
@@ -478,34 +463,27 @@ presence.absence.raster <- function (mask.raster,species.data,raster.label="") {
 species <- "Common Waxbill"
 thin_cw2<-thin_cw2[,1:2] #prepare only lat/lon data for pres/absence
 # read in a raster of the world
-setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
-myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
+#setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
+setwd("~/Desktop/Whydah Project/whydah/Data/wc2")
+myRaster <- raster( "bio1.bil") #resolution of 5 second is .08333x.08333, or 10km grid cells
+#resolution of 2 second is .04166 x .04166
 
 # create presence absence raster for Common Waxbills using pre-made function
 pa_raster_cw <- presence.absence.raster(mask.raster=myRaster, species.data=thin_cw2, raster.label=species)
-pa_raster_cw
-plot(pa_raster_cw, main="Common Waxbill Presence/Absence Raster File")
 
 #P/A Raster for Orange-Cheeked Waxbill
 species <- "OrangeCheekedWaxbill"
 thin_ocw2<-thin_ocw2[,1:2] #prepare only lat/lon data for pres/absence
 # read in a raster of the world
-setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
-myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
-
-# create presence absence raster for Common Waxbills using pre-made function
+myRaster <- raster( "bio1.bil")
 pa_raster_ocw <- presence.absence.raster(mask.raster=myRaster, species.data=thin_ocw2, raster.label=species)
 pa_raster_ocw
-plot(pa_raster_ocw, main="Orance Cheeked Waxbill Presence/Absence Raster File")
 
 #P/A Raster for Nutmeg
 species <- "Nutmeg Mannikin"
 thin_nutmeg2<-thin_nutmeg2[,1:2] #prepare only lat/lon data for pres/absence
 # read in a raster of the world
-setwd("~/Desktop/Whydah Project/whydah/Data/wc5")
-myRaster <- raster( "bio1.bil") #resolution of this file is low .08333x.08333, or 10km grid cells
-
-# create presence absence raster for Common Waxbills using pre-made function
+myRaster <- raster( "bio1.bil")
 pa_raster_nutmeg <- presence.absence.raster(mask.raster=myRaster, species.data=thin_nutmeg2, raster.label=species)
 pa_raster_nutmeg
 plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
@@ -516,7 +494,7 @@ plot(pa_raster_nutmeg, main="Nutmeg Mannikin Presence/Absence Raster File")
 
 ####
 # get the file names...these should be all of our our worldclim
-files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
+files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc2", pattern="bil", full.names=TRUE)
 predictors<-stack(files)
 mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since they are all from whole world)
 set.seed(1963) #makes sure we're generating random numbers
@@ -524,7 +502,7 @@ set.seed(1963) #makes sure we're generating random numbers
 #Created custom sets of predictors
 files #here are all climate files
 predictors_no_host<-stack(files)
-predictors_cw<-stack(files, pa_raster_cw) #make a rasterstack of climate data & waxbill presence/absence
+predictors_cw<-stack(files, pa_raster_cw2) #make a rasterstack of climate data & waxbill presence/absence
 predictors_ocw<-stack(files, pa_raster_ocw)
 predictors_nutmeg<-stack(files, pa_raster_nutmeg)
 predictors_ocw_and_cw<-stack(files, pa_raster_cw,pa_raster_ocw)
@@ -1012,7 +990,7 @@ p_ocw_and_cw_PCA<-ggplot(data=df_ocw_and_cw_pca, aes(y=lat, x=lon)) +
   )
 p_ocw_and_cw_PCA + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                          na.value = "black", limits=c(0,.90)) +
-  #coord_fixed(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
+  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #add this line to zoom into florida
   #coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #add this line to zoom into USA
 
 #MaxEnt for Whydah with all hosts PCA####
@@ -1420,19 +1398,251 @@ p_ocw_and_cw_all_worldclim2 <- p_ocw_and_cw_all_worldclim + scale_fill_gradientn
 p_all_hosts_all_worldclim2 <- p_all_hosts_all_worldclim + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                  na.value = "black",limits=c(0,.90))
 
+####
+
+# Figure of thinned data
+
+####
+
+map.dat <- map_data("world")
+ggplot() + geom_polygon(aes(long,lat, group=group), fill="grey65", data=map.dat) + 
+  geom_point(data = thin_ptw2_coords, aes(x=lon, y=lat), colour = "seagreen3", size = .75)+
+  ggtitle("Thinned occurrence points for pin-tailed whydahs") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'white')) +
+    coord_fixed()
 
 ####
 
 # Making grouped plots
 
 ####
-#grid.arrange(p_no_host_PCA2, p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_ocw_and_cw_PCA2, p_no_host_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_ocw_and_cw_all_worldclim2)
 #Grouped by PCA
 grid_arrange_shared_legend(p_all_hosts_PCA2, p_ocw_and_cw_PCA2,p_cw_PCA2, p_ocw_PCA2, p_nutmeg_PCA2, p_no_host_PCA2)
-grid_arrange_shared_legend(p_all_hosts_all_worldclim2, p_ocw_and_cw_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_no_host_all_worldclim2)
-
 #Grouped by WorldClim
+grid_arrange_shared_legend(p_all_hosts_all_worldclim2, p_ocw_and_cw_all_worldclim2, p_cw_all_worldclim2, p_ocw_all_worldclim2, p_nutmeg_all_worldclim2, p_no_host_all_worldclim2)
+#PCA Vecotr Loadings Grouped
 grid.arrange(biplot_for_climate_only,biplot_for_climate_and_cw,biplot_for_native_hosts,biplot_for_all_hosts)
+
+####
+
+# MaxEnt Work, WorldClim only. High Quality Maps
+
+####
+
+#no host
+mx_no_host_all_worldclim2 <- maxent(predictors, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+response(mx_no_host_all_worldclim2)
+plot(mx_no_host_all_worldclim2)
+
+#Model Evaluation 
+e_no_host_all_worldclim2 <- evaluate(test, backg_test, mx_no_host_all_worldclim2, predictors) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_no_host_all_worldclim2 #shows number of presences/absences/AUC and cor
+px_no_host_all_worldclim2 <- predict(predictors, mx_no_host_all_worldclim2, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+plot(px_no_host_all_worldclim2, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_no_host_all_worldclim2 <- threshold(e_no_host_all_worldclim2, 'spec_sens' )
+plot(px_no_host_all_worldclim2 > tr_no_host_all_worldclim2, main='presence/absence')
+
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_no_host_all_worldclim2, 'ROC')
+
+#Plotting Maxent output
+map.no.host.all.worldclim2 <- rasterToPoints(px_no_host_all_worldclim2) #make predictions raster a set of points for ggplot
+df_no_host_all_worldclim2 <- data.frame(map.no.host.all.worldclim2) #convert to data.frame
+head(df_no_host_all_worldclim)
+colnames(df_no_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+plot(wrld_simpl)
+
+p_no_host_all_worldclim2 <-ggplot(data=df_no_host_all_worldclim2, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("No Host 2.5") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                           na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #zoom in on florida
+
+sum(df_no_host_all_worldclim2$Suitability > tr_no_host_all_worldclim2) #counts the number of times habitat ranked as suitable compared to threshold
+0.04166667 * 525241 #resolution to 
+
+
+####Native Only
+
+mx_native_host_all_worldclim2 <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+response(mx_native_host_all_worldclim2)
+plot(mx_native_host_all_worldclim2)
+
+#Model Evaluation 
+e_native_host_all_worldclim2 <- evaluate(test, backg_test, mx_native_host_all_worldclim2, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_native_host_all_worldclim2 #shows number of presences/absences/AUC and cor
+px_native_host_all_worldclim2 <- predict(predictors_ocw_and_cw, mx_native_host_all_worldclim2, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+plot(px_native_host_all_worldclim2, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_native_host_all_worldclim2 <- threshold(e_native_host_all_worldclim2, 'spec_sens' )
+plot(px_native_host_all_worldclim2 > tr_native_host_all_worldclim2, main='presence/absence')
+
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_native_host_all_worldclim2, 'ROC')
+
+#Plotting Maxent output
+map.native.all.worldclim2 <- rasterToPoints(px_native_host_all_worldclim2) #make predictions raster a set of points for ggplot
+df_native_host_all_worldclim2 <- data.frame(map.native.all.worldclim2) #convert to data.frame
+head(df_native_host_all_worldclim)
+colnames(df_native_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+plot(wrld_simpl)
+
+p_native_host_all_worldclim2<-ggplot(data=df_native_host_all_worldclim2, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("Native Hosts 2.5") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                           na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #zoom in on florida
+
+#### All hosts
+
+mx_all_host_all_worldclim2 <- maxent(predictors_all_hosts, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+response(mx_all_host_all_worldclim2)
+plot(mx_all_host_all_worldclim2)
+
+#Model Evaluation 
+e_all_host_all_worldclim2 <- evaluate(test, backg_test, mx_all_host_all_worldclim2, predictors_all_hosts) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_all_host_all_worldclim2 #shows number of presences/absences/AUC and cor
+px_all_host_all_worldclim2 <- predict(predictors_all_hosts, mx_all_host_all_worldclim2, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+plot(px_all_host_all_worldclim2, main= 'Maxent, raw values')
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+points(test, pch=16, cex=.15, col="purple") #map of testing points
+tr_all_host_all_worldclim2 <- threshold(e_all_host_all_worldclim2, 'spec_sens' )
+plot(px_all_host_all_worldclim2 > tr_all_host_all_worldclim2, main='presence/absence')
+
+plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+points(train, pch= '+')
+plot(e_all_host_all_worldclim2, 'ROC')
+
+#Plotting Maxent output
+map.all.host.all.worldclim2 <- rasterToPoints(px_all_host_all_worldclim2) #make predictions raster a set of points for ggplot
+df_all_host_all_worldclim2 <- data.frame(map.all.host.all.worldclim2) #convert to data.frame
+head(df_all_host_all_worldclim)
+colnames(df_all_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+plot(wrld_simpl)
+
+p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=Suitability)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("All Hosts 2.5") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                    na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #zoom in on florida
+
+####
+
+# Showing differences in maps
+
+####
+
+test_for_combining_maps <- data.frame(df_all_hosts_all_worldclim$Suitability,df_all_hosts_pca$Suitability)
+
+names(test_for_combining_maps) <- c('worldclim','PCA')
+test_combined_scaled<-scale(test_for_combining_maps, center = TRUE, scale = TRUE)
+test_combined_scaled<-as.data.frame(test_combined_scaled)
+test_combined_scaled$subtracted <- (test_combined_scaled$worldclim - test_combined_scaled$PCA)
+test_combined_scaled$lon <- df_all_hosts_pca$lon
+test_combined_scaled$lat <- df_all_hosts_pca$lat
+
+testing_scaled_comparisons<-ggplot(data=test_combined_scaled, aes(y=lat, x=lon)) +
+  geom_raster(aes(fill=subtracted)) +
+  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+  theme_bw() +
+  coord_equal() +
+  ggtitle("Test of subtracted and scaled suitability") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+)
+
+testing_scaled_comparisons + #scale_fill_gradientn(colours=c("#2c7bb6","#abd9e9","#ffffbf","#fdae61","#d7191c"),
+                               #na.value = "black",limits=c(-6,4))
+
+scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+                     midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-4, 4))
+#here,  positive values (red/yellow) indicate that worldclim predicted these areas 
+#as much more suitable in these locations
+#negative values (blue) indicate that PCA predicted these regions would have higher suitability
+    
+min(test_combined_scaled$subtracted)
+max(test_combined_scaled$subtracted)
+
+testing_scaled_comparisons
+
+####
+
+# estimating amount of suitable area
+
+####
+
+plot(px_ocw_all_worldclim2 > tr_ocw_all_worldclim2, main='presence/absence')
+tr_ocw_all_worldclim2
 
 #####
 
