@@ -1482,13 +1482,24 @@ p_no_host_all_worldclim2 <-ggplot(data=df_no_host_all_worldclim2, aes(y=lat, x=l
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                           na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #zoom in on florida
 
-sum(df_no_host_all_worldclim2$Suitability > tr_no_host_all_worldclim2) #counts the number of times habitat ranked as suitable compared to threshold
-0.04166667 * 525241 #resolution to 
+worldmap_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+       na.value = "black",limits=c(0,.90))
 
+puerto_rico_prediction_map_no_host <- p_no_host_all_worldclim2 + 
+  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
+  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+puerto_rico_prediction_map_no_host
+
+us_prediction_map_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+  na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+#us_prediction_map_no_host
+  
+hawaii_prediction_map_no_host<- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+  na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #zoom in on hawaii
+hawaii_prediction_map_no_host
 
 ####Native Only
 
@@ -1505,7 +1516,8 @@ plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
 tr_native_host_all_worldclim2 <- threshold(e_native_host_all_worldclim2, 'spec_sens' )
-plot(px_native_host_all_worldclim2 > tr_native_host_all_worldclim2, main='presence/absence')
+plot(px_native_host_all_worldclim2 > tr_native_host_all_worldclim2)
+
 
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
@@ -1535,9 +1547,24 @@ p_native_host_all_worldclim2<-ggplot(data=df_native_host_all_worldclim2, aes(y=l
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                           na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #zoom in on florida
+
+worldmap_native_host <- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                                    na.value = "black",limits=c(0,.90))
+
+puerto_rico_prediction_map_native_host <- p_native_host_all_worldclim2 + 
+  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
+  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+#puerto_rico_prediction_map_no_host
+
+us_prediction_map_native_host <- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                                             na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+#us_prediction_map_no_host
+
+hawaii_prediction_map_native_host<- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                                                na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+#hawaii_prediction_map_no_host
 
 #### All hosts
 
@@ -1555,6 +1582,7 @@ points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
 tr_all_host_all_worldclim2 <- threshold(e_all_host_all_worldclim2, 'spec_sens' )
 plot(px_all_host_all_worldclim2 > tr_all_host_all_worldclim2, main='presence/absence')
+writeRaster(px_all_host_all_worldclim2, "test.bil", format = "EHdr")
 
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
@@ -1584,9 +1612,23 @@ p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, 
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'black')
   )
-p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                    na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-88, -79),  ylim = c(24, 32)) #zoom in on florida
+
+worldmap_all_host <- p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+                                                                            na.value = "black",limits=c(0,.90))
+
+puerto_rico_prediction_map_all_host <- p_all_host_all_worldclim2 + 
+  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+#puerto_rico_prediction_map_all_host
+
+us_prediction_map_all_host <- p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+#us_prediction_map_akk_host
+
+hawaii_prediction_map_all_host<- p_all_host_all_worldclim2 + 
+  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) + 
+  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+#hawaii_prediction_map_all_host
 
 ####
 
@@ -1594,21 +1636,22 @@ p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1"
 
 ####
 
-test_for_combining_maps <- data.frame(df_all_hosts_all_worldclim$Suitability,df_all_hosts_pca$Suitability)
+#Combining all hosts / no hosts
+combining_all_and_no_hosts <- data.frame(df_no_host_all_worldclim2$Suitability,df_all_host_all_worldclim2$Suitability)
 
-names(test_for_combining_maps) <- c('worldclim','PCA')
-test_combined_scaled<-scale(test_for_combining_maps, center = TRUE, scale = TRUE)
-test_combined_scaled<-as.data.frame(test_combined_scaled)
-test_combined_scaled$subtracted <- (test_combined_scaled$worldclim - test_combined_scaled$PCA)
-test_combined_scaled$lon <- df_all_hosts_pca$lon
-test_combined_scaled$lat <- df_all_hosts_pca$lat
+names(combining_all_and_no_hosts) <- c('none','all')
+all_and_none_combined_scaled<-scale(combining_all_and_no_hosts, center = TRUE, scale = TRUE)
+all_and_none_combined_scaled<-as.data.frame(all_and_none_combined_scaled)
+all_and_none_combined_scaled$subtracted <- (all_and_none_combined_scaled$all - all_and_none_combined_scaled$none)
+all_and_none_combined_scaled$lon <- df_no_host_all_worldclim2$lon
+all_and_none_combined_scaled$lat <- df_no_host_all_worldclim2$lat
 
-testing_scaled_comparisons<-ggplot(data=test_combined_scaled, aes(y=lat, x=lon)) +
+all_and_none_scaled_comparisons<-ggplot(data=all_and_none_combined_scaled, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=subtracted)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("Test of subtracted and scaled suitability") +
+  ggtitle("Comparing Suitability Maps (All - None)") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1621,17 +1664,34 @@ testing_scaled_comparisons<-ggplot(data=test_combined_scaled, aes(y=lat, x=lon))
         panel.background = element_rect(fill = 'black')
 )
 
-testing_scaled_comparisons + #scale_fill_gradientn(colours=c("#2c7bb6","#abd9e9","#ffffbf","#fdae61","#d7191c"),
-                               #na.value = "black",limits=c(-6,4))
+min(all_and_none_combined_scaled$subtracted) #calbriate min and max of plots
+max(all_and_none_combined_scaled$subtracted)
 
-scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
-                     midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-4, 4))
+library(scales)
+
+all_and_none_hawaii<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+                     midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #Hawaii
+
+all_and_none_puerto_rico<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+                                                       midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+all_and_none_puerto_rico
+
+all_and_none_us<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+                                                                                 midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+
+all_and_none_north_and_central<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+                                                                        midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50)) #zoom in on north/central america
+all_and_none_north_and_central
+
 #here,  positive values (red/yellow) indicate that worldclim predicted these areas 
 #as much more suitable in these locations
 #negative values (blue) indicate that PCA predicted these regions would have higher suitability
     
-min(test_combined_scaled$subtracted)
-max(test_combined_scaled$subtracted)
+
 
 testing_scaled_comparisons
 
@@ -1643,6 +1703,8 @@ testing_scaled_comparisons
 
 plot(px_ocw_all_worldclim2 > tr_ocw_all_worldclim2, main='presence/absence')
 tr_ocw_all_worldclim2
+
+icearea <- cellStats( pa.raster.cw , 'sum', na.rm=TRUE)  * prod(res(pa.raster.cw )) 
 
 #####
 
