@@ -1279,7 +1279,6 @@ max(df_ocw_and_cw_all_worldclim$Suitability)
 plot(wrld_simpl)
 points(filter(df_ocw_and_cw_all_worldclim, Suitability >= .75), col="red")
 
-
 p_ocw_and_cw_all_worldclim<-ggplot(data=df_ocw_and_cw_all_worldclim, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
@@ -1405,9 +1404,10 @@ p_all_hosts_all_worldclim2 <- p_all_hosts_all_worldclim + scale_fill_gradientn(c
 ####
 
 map.dat <- map_data("world")
-ggplot() + geom_polygon(aes(long,lat, group=group), fill="grey65", data=map.dat) + 
-  geom_point(data = thin_ptw2_coords, aes(x=lon, y=lat), colour = "seagreen3", size = .75)+
-  ggtitle("Thinned occurrence points for pin-tailed whydahs") +
+map_of_thinned_ptw<-ggplot() + 
+  geom_polygon(aes(long,lat, group=group), fill="#f7f7f7", data=map.dat, color = "black", size = .2) + 
+  geom_point(data = thin_ptw2_coords, aes(x=lon, y=lat), colour = "#2b83ba", size = .75)+
+  ggtitle("Spatially thinned occurrences \nfor pin-tailed whydah") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -1419,7 +1419,9 @@ ggplot() + geom_polygon(aes(long,lat, group=group), fill="grey65", data=map.dat)
         legend.key = element_blank(),
         panel.background = element_rect(fill = 'white')) +
     coord_fixed()
-
+map_of_thinned_ptw
+map_of_thinned_ptw + coord_fixed(xlim = c(15, 35),  ylim = c(-35, -20)) #zoon in on all of sa
+map_of_thinned_ptw + coord_fixed(xlim = c(25, 30),  ylim = c(-30, -25)) #zoom in on small part of SA
 ####
 
 # Making grouped plots
@@ -1464,6 +1466,9 @@ df_no_host_all_worldclim2 <- data.frame(map.no.host.all.worldclim2) #convert to 
 head(df_no_host_all_worldclim)
 colnames(df_no_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 plot(wrld_simpl)
+max(df_no_host_all_worldclim2$Suitability)
+plot(wrld_simpl)
+points(filter(df_no_host_all_worldclim2, Suitability >= .73), col="red")
 
 p_no_host_all_worldclim2 <-ggplot(data=df_no_host_all_worldclim2, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -1529,6 +1534,9 @@ df_native_host_all_worldclim2 <- data.frame(map.native.all.worldclim2) #convert 
 head(df_native_host_all_worldclim)
 colnames(df_native_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 plot(wrld_simpl)
+max(df_native_host_all_worldclim2$Suitability)
+plot(wrld_simpl)
+points(filter(df_native_host_all_worldclim2, Suitability >= .79), col="red")
 
 p_native_host_all_worldclim2<-ggplot(data=df_native_host_all_worldclim2, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -1594,6 +1602,9 @@ df_all_host_all_worldclim2 <- data.frame(map.all.host.all.worldclim2) #convert t
 head(df_all_host_all_worldclim)
 colnames(df_all_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 plot(wrld_simpl)
+max(df_all_host_all_worldclim2$Suitability)
+plot(wrld_simpl)
+points(filter(df_all_host_all_worldclim2, Suitability >= .79), col="red")
 
 p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -1672,6 +1683,7 @@ library(scales)
 all_and_none_hawaii<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
                      midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
   coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #Hawaii
+all_and_none_hawaii
 
 all_and_none_puerto_rico<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
                                                        midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
