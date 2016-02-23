@@ -23,6 +23,7 @@ library(scales)
 library(ecospat)
 library(gridExtra)
 library(scales)
+library(plyr)
 
 #Full occurrence dataset####
 #ptw<-gbif('Vidua', 'macroura', geo=T, removeZeros = T)
@@ -515,7 +516,7 @@ worldmap_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("b
 puerto_rico_prediction_map_no_host <- p_no_host_all_worldclim2 + 
   scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
   coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
-puerto_rico_prediction_map_no_host
+
 
 us_prediction_map_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                                              na.value = "black",limits=c(0,.90)) + 
@@ -525,7 +526,7 @@ us_prediction_map_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(col
 hawaii_prediction_map_no_host<- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
                                                                                 na.value = "black",limits=c(0,.90)) + 
   coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #zoom in on hawaii
-hawaii_prediction_map_no_host
+
 
 ####Native Only
 mx_native_host_all_worldclim2 <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
@@ -724,20 +725,14 @@ all_and_none_north_and_central
 #as much more suitable in these locations
 #negative values (blue) indicate that PCA predicted these regions would have higher suitability
 
-
-
-testing_scaled_comparisons
-
 ####
 
 # estimating amount of suitable area
 
+#still need to figure out how to do this
+
 ####
 
-plot(px_ocw_all_worldclim2 > tr_ocw_all_worldclim2, main='presence/absence')
-tr_ocw_all_worldclim2
-
-icearea <- cellStats( pa.raster.cw , 'sum', na.rm=TRUE)  * prod(res(pa.raster.cw )) 
 
 
 #####
@@ -745,12 +740,53 @@ icearea <- cellStats( pa.raster.cw , 'sum', na.rm=TRUE)  * prod(res(pa.raster.cw
 # Heatmap of suitable regions
 
 ####
+df_no_host_all_worldclim_pres <- df_no_host_all_worldclim2 %>% mutate(pres_no_host = ifelse(Suitability >= 0.4087746, 1, 0))
+df_native_host_all_worldclim_pres <- df_native_host_all_worldclim2 %>% mutate(pres_native_host = ifelse(Suitability >= 0.3712534, 1, 0))
+df_all_host_all_worldclim_pres <- df_all_host_all_worldclim2 %>% mutate(pres_all_host = ifelse(Suitability >= .3772382, 1, 0))
 
-mutate(flights, 
-       gain = arr_delay - dep_delay,
-       speed = distance / air_time * 60)
+df_partial<- left_join(df_no_host_all_worldclim_pres, df_native_host_all_worldclim_pres, by = c("lon", "lat"))
+head(df_partial)
+df_all_presences <- left_join(df_partial, df_all_host_all_worldclim_pres, by = c("lon", "lat"))
 
+df_all_presences$total <- rowSums(df_all_presences[, c(4, 6, 8)])
+#df_all_presences$total <- as.factor(df_all_presences$total)
 
+heatmappalette <- c('#ffffe5','#fecc5c','#fd8d3c','#e31a1c')
+
+heatmap_whydah <- ggplot(data=df_all_presences, aes(y=lat, x=lon), colour = "black", size = .2) +
+  geom_raster(aes(fill=factor(total))) +
+  theme_bw() +
+  scale_fill_manual(values = heatmappalette) +
+  coord_equal() +
+  ggtitle("Heatmap for Predicted Presences") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'black')
+  )
+heatmap_whydah
+
+heatmap_puerto_rico <- heatmap_whydah + 
+  coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+# heatmap_puerto_rico
+
+heatmap_us <- heatmap_whydah + 
+  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+#heatmap_us
+
+heatmap_hawaii <- heatmap_whydah + 
+  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+#heatmap_hawaii
+
+heatmap_central_north <- heatmap_whydah +
+  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50)) #north and central america
+heatmap_central_north
 
 #####
 
@@ -771,4 +807,3 @@ grid_arrange_shared_legend <- function(...) {
     heights = unit.c(unit(1, "npc") - lheight, lheight))
 }
 
-df_all_host_all_worldclim_pres <- df_all_host_all_worldclim2 %>% mutate(pres_all_host = ifelse(Suitability >= .3772382, 1, 0))
