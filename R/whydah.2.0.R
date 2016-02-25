@@ -1,5 +1,4 @@
 setwd("~/Desktop/Whydah Project/whydah/Data")
-#load("~/Desktop/Whydah Project/whydah/R/whydah_workspace.RData")
 options(java.parameters = "-Xmx1g" )
 Sys.setenv(NOAWT=TRUE)
 library(rJava)
@@ -633,7 +632,6 @@ p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, 
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
   theme_bw() +
   coord_equal() +
-  ggtitle("All Hosts 2.5") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -646,23 +644,28 @@ p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, 
         panel.background = element_rect(fill = 'black')
   )
 
-worldmap_all_host <- p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                      na.value = "black",limits=c(0,.90))
+worldmap_all_host <- p_all_host_all_worldclim2 + 
+  ggtitle("Pin-tailed Whydah Suitability Predicted by \nWorldclim and all Hosts") +
+  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90))
+#scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90))
+worldmap_all_host
 
 puerto_rico_prediction_map_all_host <- p_all_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
-# puerto_rico_prediction_map_all_host
+  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
+  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+#puerto_rico_prediction_map_all_host
 
-us_prediction_map_all_host <- p_all_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+us_prediction_map_all_host <- p_all_host_all_worldclim2 + 
+  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
+  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
 #us_prediction_map_akk_host
 
 hawaii_prediction_map_all_host<- p_all_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
+  coord_fixed(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
 #hawaii_prediction_map_all_host
 
+grid_arrange_shared_legend(us_prediction_map_all_host, hawaii_prediction_map_all_host, puerto_rico_prediction_map_all_host)
 ####
 
 # Showing differences in maps
