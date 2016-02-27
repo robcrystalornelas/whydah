@@ -791,6 +791,23 @@ heatmap_central_north <- heatmap_whydah +
   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50)) #north and central america
 heatmap_central_north
 
+
+#####
+
+# Model w/ Replicates
+
+#####
+#no host
+mx_no_host_all_worldclim_replicates <- maxent(predictors, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
+mx_no_host_all_worldclim_replicates
+
+#all hosts
+mx_all_host_replicates <- maxent(predictors_all_hosts, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
+mx_all_host_replicates
+
+mx_native_host_replicates <- maxent(predictors_ocw_and_cw, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
+mx_native_host_replicates
+
 #####
 
 # Grid Arrange Share Legend Function
