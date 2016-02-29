@@ -489,7 +489,8 @@ colnames(df_no_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appr
 plot(wrld_simpl)
 max(df_no_host_all_worldclim2$Suitability)
 plot(wrld_simpl)
-points(filter(df_no_host_all_worldclim2, Suitability >= .73), col="red")
+points(filter(df_no_host_all_worldclim2, Suitability >= .6912), col="red")
+click()
 
 p_no_host_all_worldclim2 <-ggplot(data=df_no_host_all_worldclim2, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -537,6 +538,7 @@ e_native_host_all_worldclim2 <- evaluate(test, backg_test, mx_native_host_all_wo
 e_native_host_all_worldclim2 #shows number of presences/absences/AUC and cor
 px_native_host_all_worldclim2 <- predict(predictors_ocw_and_cw, mx_native_host_all_worldclim2) #make predictions of habitat suitability can include argument ext=ext
 plot(px_native_host_all_worldclim2, main= 'Maxent, raw values')
+click()
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
@@ -557,7 +559,7 @@ colnames(df_native_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make 
 plot(wrld_simpl)
 max(df_native_host_all_worldclim2$Suitability)
 plot(wrld_simpl)
-points(filter(df_native_host_all_worldclim2, Suitability >= .79), col="red")
+points(filter(df_native_host_all_worldclim2, Suitability >= .7332606), col="red")
 
 p_native_host_all_worldclim2<-ggplot(data=df_native_host_all_worldclim2, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
@@ -625,8 +627,8 @@ colnames(df_all_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make app
 plot(wrld_simpl)
 max(df_all_host_all_worldclim2$Suitability)
 plot(wrld_simpl)
-points(filter(df_all_host_all_worldclim2, Suitability >= .79), col="red")
-
+points(filter(df_all_host_all_worldclim2, Suitability >= .77572), col="red")
+click()
 p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, x=lon)) +
   geom_raster(aes(fill=Suitability)) +
   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
@@ -759,9 +761,8 @@ heatmappalette <- c('#ffffe5','#fecc5c','#fd8d3c','#e31a1c')
 heatmap_whydah <- ggplot(data=df_all_presences, aes(y=lat, x=lon), colour = "black", size = .2) +
   geom_raster(aes(fill=factor(total))) +
   theme_bw() +
-  scale_fill_manual(values = heatmappalette) +
+  scale_fill_manual(values = heatmappalette, name="Model\nAgreement") +
   coord_equal() +
-  ggtitle("Heatmap for Predicted Presences") +
   theme(axis.title.x = element_text(size=16),
         axis.title.y = element_text(size=16, angle=90),
         axis.text.x = element_text(size=14),
@@ -771,26 +772,31 @@ heatmap_whydah <- ggplot(data=df_all_presences, aes(y=lat, x=lon), colour = "bla
         panel.grid.minor = element_blank(),
         legend.position = 'right',
         legend.key = element_blank(),
-        panel.background = element_rect(fill = 'black')
-  )
-heatmap_whydah
+        panel.background = element_rect(fill = 'black'))
+#heatmap_whydah
+
+#converting to geotiff
+df_all_presences_2<-df_all_presences[,c(1,2,9)]
+head(df_all_presences_2)
+coordinates(df_all_presences_2) <- ~ lon + lat
+gridded(df_all_presences_2) <- TRUE
+raster_of_heatmap <- raster(df_all_presences_2)
+writeRaster(raster_of_heatmap, filename="heatmap_test_whydah.tif", format="GTiff", overwrite=TRUE)
 
 heatmap_puerto_rico <- heatmap_whydah + 
-  coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20))
+#zoom in on Puerto Rico
 # heatmap_puerto_rico
 
-heatmap_us <- heatmap_whydah + 
-  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
-#heatmap_us
-
 heatmap_hawaii <- heatmap_whydah + 
-  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+  coord_fixed(xlim = c(-161, -154),  ylim = c(18, 23))
 #heatmap_hawaii
 
 heatmap_central_north <- heatmap_whydah +
-  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50)) #north and central america
-heatmap_central_north
+  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50))
+#heatmap_central_north
 
+grid_arrange_shared_legend(heatmap_central_north, heatmap_hawaii, heatmap_puerto_rico)
 
 #####
 
@@ -807,6 +813,30 @@ mx_all_host_replicates
 
 mx_native_host_replicates <- maxent(predictors_ocw_and_cw, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
 mx_native_host_replicates
+
+#####
+
+# Map of thinned ptw points
+
+####
+thinned_whydah_map <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, x=lon),colour = "black", size = .2) +
+  geom_raster(fill = "#ece2f0") +
+  theme_bw() +
+  geom_point(data=thin_ptw2_coords, aes(y=lat, x=lon), color = "#1c9099", size = .25) +
+  coord_equal() +
+  ggtitle("Spatially Thinned Pin-tailed Whydah Points") +
+  theme(axis.title.x = element_text(size=16),
+        axis.title.y = element_text(size=16, angle=90),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        plot.title = element_text(face="bold", size=20),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        legend.position = 'right',
+        legend.key = element_blank(),
+        panel.background = element_rect(fill = 'white'))
+#thinned_whydah_map
+
 
 #####
 
