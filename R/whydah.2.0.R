@@ -50,8 +50,6 @@ filter(ptw.unique, lon<(-122) & lat>35 & country=="United States") #find San Fra
 which(ptw.unique$lon == -122.511, ptw.unique$lat== 37.7777)
 ptw.unique<-ptw.unique[-1312,] #remove san fran point
 
-
-
 # only complete cases
 ptw.unique<-ptw.unique[complete.cases(ptw.unique),]
 dim(ptw.unique)
@@ -128,7 +126,6 @@ ocw.unique<-filter(ocw.unique, country !="Germany") #Remove Germany
 unique(ocw.unique$country)
 
 #Remove outliers by lon/lat
-#click()
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find northern midwest point
 which(ocw.unique$lon == -95.55926, ocw.unique$lat== 29.69430) #find it in the data.frame
 ocw.unique<- ocw.unique[-404,] #remove that row!
@@ -136,12 +133,12 @@ ocw.unique<- ocw.unique[-404,] #remove that row!
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find 2nd midwest points
 points(-96.67213,40.80549,col="green") #make sure it's the right one
 which(ocw.unique$lon == -96.67213, ocw.unique$lat== 40.80549) #find it in the data.frame
-ocw.unique<- ocw.unique[-1027,] #remove that row!
+ocw.unique<- ocw.unique[-1031,] #remove that row!
 
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find 3rd midwest points
 points(-96.67964,40.80004,col="purple") #make sure it's the right one
 which(ocw.unique$lon == -96.67964, ocw.unique$lat== 40.80004) #find it in the data.frame
-ocw.unique<- ocw.unique[-1081,] #remove that row!
+ocw.unique<- ocw.unique[-1086,] #remove that row!
 
 filter(ocw.unique, lon>(-87) & lat>(36) & country=="United States") #find DC point
 points(-77.09590,38.75890,col="purple") #make sure it's the right one
@@ -154,16 +151,16 @@ ocw.unique<- ocw.unique[-612,] #remove that row!
 
 points(-83.14313,42.47483,col="green") #make sure it's the right one
 which(ocw.unique$lon == -83.14313, ocw.unique$lat== 42.47483) #find it in the data.frame
-ocw.unique<- ocw.unique[-955,] #remove that row!
+ocw.unique<- ocw.unique[-958,] #remove that row!
 
 filter(ocw.unique, lon<(-120) & lat>35 & country=="United States") #find 1st San Fran point
 which(ocw.unique$lat == 38.57520)
 points(-121.4675,38.57520,col="red")
-ocw.unique<-ocw.unique[-858,]
+ocw.unique<-ocw.unique[-860,]
 
 #find 2nd San Fran point
 which(ocw.unique$lat == 41.96554)
-ocw.unique<-ocw.unique[-1057,] #remove san fran point
+ocw.unique<-ocw.unique[-10561,] #remove san fran point
 
 #re-check ocw points
 plot(wrld_simpl)
@@ -235,7 +232,7 @@ unique(cw.unique$country)
 filter(cw.unique, lon<(-72) & lat>(35)) #find northern midwest point
 points(-77.22568,38.97612)
 which(cw.unique$lon == -77.22568, cw.unique$lat== 38.97612) #find it in the data.frame
-cw.unique<- cw.unique[-6050,] #remove that row!
+cw.unique<- cw.unique[-6046,] #remove that row!
 
 #Check Common Waxbill Points
 plot(wrld_simpl)
@@ -407,7 +404,6 @@ thin_nutmeg2<-thin_nutmeg2[,1:2] #prepare only lat/lon data for pres/absence
 # read in a raster of the world
 myRaster <- raster( "bio1.bil")
 pa_raster_nutmeg <- presence.absence.raster(mask.raster=myRaster, species.data=thin_nutmeg2, raster.label=species)
-pa_raster_nutmeg
 
 ####
 
@@ -462,6 +458,7 @@ head(train) #just has lon/lat
 
 #no host
 mx_no_host_all_worldclim2 <- maxent(predictors, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_no_host_all_worldclim2@results
 response(mx_no_host_all_worldclim2)
 plot(mx_no_host_all_worldclim2)
 
@@ -481,57 +478,60 @@ plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch= '+')
 plot(e_no_host_all_worldclim2, 'ROC')
 
-#Plotting Maxent output
-map.no.host.all.worldclim2 <- rasterToPoints(px_no_host_all_worldclim2) #make predictions raster a set of points for ggplot
-df_no_host_all_worldclim2 <- data.frame(map.no.host.all.worldclim2) #convert to data.frame
-head(df_no_host_all_worldclim2)
-colnames(df_no_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
-max(df_no_host_all_worldclim2$Suitability)
-plot(wrld_simpl)
-points(filter(df_no_host_all_worldclim2, Suitability >= .6912), col="red")
-click()
-
-p_no_host_all_worldclim2 <-ggplot(data=df_no_host_all_worldclim2, aes(y=lat, x=lon)) +
-  geom_raster(aes(fill=Suitability)) +
-  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
-  theme_bw() +
-  coord_equal() +
-  ggtitle("No Host 2.5") +
-  theme(axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16, angle=90),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        plot.title = element_text(face="bold", size=20),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = 'right',
-        legend.key = element_blank(),
-        panel.background = element_rect(fill = 'black')
-  )
-
-worldmap_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                    na.value = "black",limits=c(0,.90))
-
-puerto_rico_prediction_map_no_host <- p_no_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
-  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
-
-
-us_prediction_map_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                             na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
-#us_prediction_map_no_host
-
-hawaii_prediction_map_no_host<- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                                na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #zoom in on hawaii
+# #Plotting Maxent output
+# map.no.host.all.worldclim2 <- rasterToPoints(px_no_host_all_worldclim2) #make predictions raster a set of points for ggplot
+# df_no_host_all_worldclim2 <- data.frame(map.no.host.all.worldclim2) #convert to data.frame
+# head(df_no_host_all_worldclim2)
+# colnames(df_no_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+# plot(wrld_simpl)
+# max(df_no_host_all_worldclim2$Suitability)
+# plot(wrld_simpl)
+# points(filter(df_no_host_all_worldclim2, Suitability >= .6912), col="red")
+# click()
+# 
+# p_no_host_all_worldclim2 <-ggplot(data=df_no_host_all_worldclim2, aes(y=lat, x=lon)) +
+#   geom_raster(aes(fill=Suitability)) +
+#   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+#   theme_bw() +
+#   coord_equal() +
+#   ggtitle("No Host 2.5") +
+#   theme(axis.title.x = element_text(size=16),
+#         axis.title.y = element_text(size=16, angle=90),
+#         axis.text.x = element_text(size=14),
+#         axis.text.y = element_text(size=14),
+#         plot.title = element_text(face="bold", size=20),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         legend.position = 'right',
+#         legend.key = element_blank(),
+#         panel.background = element_rect(fill = 'black')
+#   )
+# 
+# worldmap_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+#                                                                     na.value = "black",limits=c(0,.90))
+# 
+# puerto_rico_prediction_map_no_host <- p_no_host_all_worldclim2 + 
+#   scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
+#   coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+# 
+# 
+# us_prediction_map_no_host <- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+#                                                                              na.value = "black",limits=c(0,.90)) + 
+#   coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+# #us_prediction_map_no_host
+# 
+# hawaii_prediction_map_no_host<- p_no_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+#                                                                                 na.value = "black",limits=c(0,.90)) + 
+#   coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #zoom in on hawaii
 
 
 ####Native Only
 mx_native_host_all_worldclim2 <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_native_host_all_worldclim2
+mx_native_host_all_worldclim2@results
 response(mx_native_host_all_worldclim2)
 plot(mx_native_host_all_worldclim2)
+mx_native_host_all_worldclim2@results
 
 #Model Evaluation 
 e_native_host_all_worldclim2 <- evaluate(test, backg_test, mx_native_host_all_worldclim2, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
@@ -561,44 +561,45 @@ max(df_native_host_all_worldclim2$Suitability)
 plot(wrld_simpl)
 points(filter(df_native_host_all_worldclim2, Suitability >= .7332606), col="red")
 
-p_native_host_all_worldclim2<-ggplot(data=df_native_host_all_worldclim2, aes(y=lat, x=lon)) +
-  geom_raster(aes(fill=Suitability)) +
-  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
-  theme_bw() +
-  coord_equal() +
-  ggtitle("Native Hosts 2.5") +
-  theme(axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16, angle=90),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        plot.title = element_text(face="bold", size=20),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = 'right',
-        legend.key = element_blank(),
-        panel.background = element_rect(fill = 'black')
-  )
-
-worldmap_native_host <- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                            na.value = "black",limits=c(0,.90))
-
-puerto_rico_prediction_map_native_host <- p_native_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
-  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
-#puerto_rico_prediction_map_no_host
-
-us_prediction_map_native_host <- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                                     na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
-#us_prediction_map_no_host
-
-hawaii_prediction_map_native_host<- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
-                                                                                        na.value = "black",limits=c(0,.90)) + 
-  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
-#hawaii_prediction_map_no_host
+# p_native_host_all_worldclim2<-ggplot(data=df_native_host_all_worldclim2, aes(y=lat, x=lon)) +
+#   geom_raster(aes(fill=Suitability)) +
+#   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+#   theme_bw() +
+#   coord_equal() +
+#   ggtitle("Native Hosts 2.5") +
+#   theme(axis.title.x = element_text(size=16),
+#         axis.title.y = element_text(size=16, angle=90),
+#         axis.text.x = element_text(size=14),
+#         axis.text.y = element_text(size=14),
+#         plot.title = element_text(face="bold", size=20),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         legend.position = 'right',
+#         legend.key = element_blank(),
+#         panel.background = element_rect(fill = 'black')
+#   )
+# 
+# worldmap_native_host <- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+#                                                                             na.value = "black",limits=c(0,.90))
+# 
+# puerto_rico_prediction_map_native_host <- p_native_host_all_worldclim2 + 
+#   scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),na.value = "black",limits=c(0,.90)) + 
+#   coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+# #puerto_rico_prediction_map_no_host
+# 
+# us_prediction_map_native_host <- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+#                                                                                      na.value = "black",limits=c(0,.90)) + 
+#   coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+# #us_prediction_map_no_host
+# 
+# hawaii_prediction_map_native_host<- p_native_host_all_worldclim2 + scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"),
+#                                                                                         na.value = "black",limits=c(0,.90)) + 
+#   coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+# #hawaii_prediction_map_no_host
 
 #### All hosts
 mx_all_host_all_worldclim2 <- maxent(predictors_all_hosts, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_all_host_all_worldclim2@results
 response(mx_all_host_all_worldclim2)
 plot(mx_all_host_all_worldclim2)
 
@@ -607,6 +608,8 @@ e_all_host_all_worldclim2 <- evaluate(test, backg_test, mx_all_host_all_worldcli
 e_all_host_all_worldclim2 #shows number of presences/absences/AUC and cor
 px_all_host_all_worldclim2 <- predict(predictors_all_hosts, mx_all_host_all_worldclim2, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
 plot(px_all_host_all_worldclim2, main= 'Maxent, raw values')
+writeRaster(px_all_host_all_worldclim2, filename="allhost_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
 plot(wrld_simpl, add=TRUE, border= 'dark grey' )
 points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
 points(test, pch=16, cex=.15, col="purple") #map of testing points
@@ -620,54 +623,54 @@ points(train, pch= '+')
 plot(e_all_host_all_worldclim2, 'ROC')
 
 #Plotting Maxent output
-map.all.host.all.worldclim2 <- rasterToPoints(px_all_host_all_worldclim2) #make predictions raster a set of points for ggplot
-df_all_host_all_worldclim2 <- data.frame(map.all.host.all.worldclim2) #convert to data.frame
-head(df_all_host_all_worldclim)
-colnames(df_all_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
+# map.all.host.all.worldclim2 <- rasterToPoints(px_all_host_all_worldclim2) #make predictions raster a set of points for ggplot
+# df_all_host_all_worldclim2 <- data.frame(map.all.host.all.worldclim2) #convert to data.frame
+# head(df_all_host_all_worldclim2)
+# colnames(df_all_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+# plot(wrld_simpl)
 max(df_all_host_all_worldclim2$Suitability)
-plot(wrld_simpl)
-points(filter(df_all_host_all_worldclim2, Suitability >= .77572), col="red")
-click()
-p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, x=lon)) +
-  geom_raster(aes(fill=Suitability)) +
-  #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
-  theme_bw() +
-  coord_equal() +
-  theme(axis.title.x = element_text(size=16),
-        axis.title.y = element_text(size=16, angle=90),
-        axis.text.x = element_text(size=14),
-        axis.text.y = element_text(size=14),
-        plot.title = element_text(face="bold", size=20),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        legend.position = 'right',
-        legend.key = element_blank(),
-        panel.background = element_rect(fill = 'black')
-  )
+# plot(wrld_simpl)
+# points(filter(df_all_host_all_worldclim2, Suitability >= .77572), col="red")
+# p_all_host_all_worldclim2 <- ggplot(data=df_all_host_all_worldclim2, aes(y=lat, x=lon)) +
+#   geom_raster(aes(fill=Suitability)) +
+#   #geom_point(data=thin_ptw2_coords, aes(x=lon, y=lat), color='thistle3', size=1, shape=4) +
+#   theme_bw() +
+#   coord_equal() +
+#   theme(axis.title.x = element_text(size=16),
+#         axis.title.y = element_text(size=16, angle=90),
+#         axis.text.x = element_text(size=14),
+#         axis.text.y = element_text(size=14),
+#         plot.title = element_text(face="bold", size=20),
+#         panel.grid.major = element_blank(),
+#         panel.grid.minor = element_blank(),
+#         legend.position = 'right',
+#         legend.key = element_blank(),
+#         panel.background = element_rect(fill = 'black')
+#   )
 
-worldmap_all_host <- p_all_host_all_worldclim2 + 
-  ggtitle("Pin-tailed Whydah Suitability Predicted by \nWorldclim and all Hosts") +
-  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90))
-#scale_fill_gradientn(colours=c("blue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90))
-worldmap_all_host
+# worldmap_all_host <- p_all_host_all_worldclim2 + 
+#   #ggtitle("Pin-tailed Whydah Suitability Predicted by \nWorldclim and all Hosts") +
+#   scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90))
+# worldmap_all_host
+# 
+# puerto_rico_prediction_map_all_host <- p_all_host_all_worldclim2 + 
+#   scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
+#   coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+# #puerto_rico_prediction_map_all_host
+# 
+# us_prediction_map_all_host <- p_all_host_all_worldclim2 + 
+#   scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
+#   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+# #us_prediction_map_akk_host
+# 
+# hawaii_prediction_map_all_host<- p_all_host_all_worldclim2 + 
+#   scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
+#   coord_fixed(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
+# #hawaii_prediction_map_all_host
+# 
+# grid_arrange_shared_legend(us_prediction_map_all_host, hawaii_prediction_map_all_host, puerto_rico_prediction_map_all_host)
+# 
 
-puerto_rico_prediction_map_all_host <- p_all_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
-  coord_fixed(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
-#puerto_rico_prediction_map_all_host
-
-us_prediction_map_all_host <- p_all_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
-  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
-#us_prediction_map_akk_host
-
-hawaii_prediction_map_all_host<- p_all_host_all_worldclim2 + 
-  scale_fill_gradientn(colours=c("dodgerblue4","dodgerblue1","cyan1","darkolivegreen2","yellow1","darkorange1", "red"), na.value = "black",limits=c(0,.90)) +
-  coord_fixed(xlim = c(-161, -154),  ylim = c(18, 23)) #hawaii
-#hawaii_prediction_map_all_host
-
-grid_arrange_shared_legend(us_prediction_map_all_host, hawaii_prediction_map_all_host, puerto_rico_prediction_map_all_host)
 ####
 
 # Showing differences in maps
@@ -702,29 +705,45 @@ all_and_none_scaled_comparisons<-ggplot(data=all_and_none_combined_scaled, aes(y
         panel.background = element_rect(fill = 'black')
   )
 
+head(all_and_none_combined_scaled)
+
 min(all_and_none_combined_scaled$subtracted) #calbriate min and max of plots
 max(all_and_none_combined_scaled$subtracted)
 
 library(scales)
 
-all_and_none_hawaii<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
-                                                                            midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
-  coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #Hawaii
-all_and_none_hawaii
+#exporting this data.frame
+all_and_none_combined_scaled2<-all_and_none_combined_scaled[,c(4,5,3)]
+pts<-all_and_none_combined_scaled2
+names(pts)<-c("x","y","subtracted")
+coordinates(pts)=~x+y
+proj4string(pts)=CRS("+init=epsg:4326") # set it to lat-long
+pts = spTransform(pts,CRS("+init=epsg:4326"))
+gridded(pts) = TRUE
+r = raster(pts)
+projection(r) = CRS("+init=epsg:4326")
+plot(r)
+writeRaster(r,"whydah_subtracted_predictions.tif")
 
-all_and_none_puerto_rico<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
-                                                                                 midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
-  coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
-all_and_none_puerto_rico
 
-all_and_none_us<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
-                                                                        midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
-  coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
-
-all_and_none_north_and_central<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
-                                                                                       midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
-  coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50)) #zoom in on north/central america
-all_and_none_north_and_central
+# all_and_none_hawaii<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+#                                                                             midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+#   coord_cartesian(xlim = c(-161, -154),  ylim = c(18, 23)) #Hawaii
+# all_and_none_hawaii
+# 
+# all_and_none_puerto_rico<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+#                                                                                  midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+#   coord_cartesian(xlim = c(-70, -62),  ylim = c(16, 20)) #zoom in on Puerto Rico
+# all_and_none_puerto_rico
+# 
+# all_and_none_us<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+#                                                                         midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+#   coord_cartesian(xlim = c(-125.8,-62.2), ylim = c(22.8, 50)) #zoom in on US
+# 
+# all_and_none_north_and_central<-all_and_none_scaled_comparisons + scale_fill_gradient2(low = muted('blue'), mid = "#ffffbf", high = muted("red"),
+#                                                                                        midpoint = 0, space = "Lab", na.value = "grey50", guide = "colourbar", limits=c(-1, 4)) +
+#   coord_fixed(xlim = c(-125.8,-62.2), ylim = c(3, 50)) #zoom in on north/central america
+# all_and_none_north_and_central
 
 #here,  positive values (red/yellow) indicate that worldclim predicted these areas 
 #as much more suitable in these locations
@@ -804,15 +823,20 @@ grid_arrange_shared_legend(heatmap_central_north, heatmap_hawaii, heatmap_puerto
 
 #####
 #no host
-mx_no_host_all_worldclim_replicates <- maxent(predictors, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
+mx_no_host_all_worldclim_replicates <- maxent(predictors, thin_ptw2_coords, args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
 mx_no_host_all_worldclim_replicates
+mx_no_host_all_worldclim_replicates@results
+
+#native hosts#
+
+mx_native_host_replicates <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
+mx_native_host_replicates
+mx_native_host_replicates@results
 
 #all hosts
-mx_all_host_replicates <- maxent(predictors_all_hosts, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
+mx_all_host_replicates <- maxent(predictors_all_hosts, thin_ptw2_coords, args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
 mx_all_host_replicates
-
-mx_native_host_replicates <- maxent(predictors_ocw_and_cw, thin_ptw2_coords,args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
-mx_native_host_replicates
+mx_all_host_replicates@results
 
 #####
 
