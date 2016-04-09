@@ -455,6 +455,7 @@ head(train) #just has lon/lat
 #no host####
 mx_no_host_all_worldclim <- maxent(predictors, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_no_host_all_worldclim@results
+mx_no_host_all_worldclim@lambdas
 response(mx_no_host_all_worldclim)
 plot(mx_no_host_all_worldclim)
 
@@ -489,6 +490,7 @@ points(filter(df_no_host_all_worldclim, Suitability >= .6912), col="red")
 mx_native_host_all_worldclim <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE'))
 mx_native_host_all_worldclim
 mx_native_host_all_worldclim@results
+mx_native_host_all_worldclim@lambdas
 response(mx_native_host_all_worldclim)
 plot(mx_native_host_all_worldclim)
 mx_native_host_all_worldclim@results
@@ -516,6 +518,7 @@ points(filter(df_native_host_all_worldclim2, Suitability >= .7332606), col="red"
 # All hosts#####
 mx_all_host_all_worldclim <- maxent(predictors_all_hosts, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_all_host_all_worldclim@results
+mx_all_host_all_worldclim@lambdas
 response(mx_all_host_all_worldclim)
 plot(mx_all_host_all_worldclim)
 
@@ -644,3 +647,11 @@ all_grid <- sp.from.asc(all_host_asc)
 
 no <- niche.overlap(list(no.host = no_grid, native.host = native_grid, all.hosts = all_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
+
+###
+
+# Code for ENMeval
+
+####
+
+
