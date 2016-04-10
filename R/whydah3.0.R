@@ -199,7 +199,7 @@ write.SpThin(
   coords=FALSE,
   dir=tempdir()
 )
-
+?spThin
 #can elect to read in .csv of all thinned points
 thin_ocw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ocw2) #Always check to make sure this shows correct species
@@ -413,17 +413,17 @@ pa_raster_nutmeg
 
 # get the file names...these should be all of our our worldclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc2", pattern="bil", full.names=TRUE)
-predictors<-stack(files)
+
 mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since they are all from whole world)
 set.seed(1963) #makes sure we're generating random numbers
 
 #Created custom sets of predictors
-predictors_no_host<-stack(files)
+predictors<-stack(files)
 predictors_ocw_and_cw <- stack(files, pa_raster_cw, pa_raster_ocw)
-predictors_all_hosts<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg)
+predictors_two_native_one_novel<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg)
 
 #background points
-backg <- randomPoints(predictors_no_host, n=4000, ext = (extent(-119, 55.4539,-33,23)), extf=1.25) #pull background points from specified extent
+backg <- randomPoints(predictors_no_host, n=10000, ext = (extent(-119, 55.4539,-33,23))) #pull background points from specified extent
 
 #From occurrence records...bounding box is. y (lat) min = -34.8324, ymax=41.526  /  x (lon) min = -118.808, xmax = 55.4539
 #ext = extent(-90, -32, -33, 23) #to speed up how quickly everything processes, so limit our extent
@@ -448,11 +448,11 @@ head(train) #just has lon/lat
 
 ####
 
-# MaxEnt
+# MaxEnt models for no host ####
 
 ####
 
-#no host####
+# no host split sample approach ####
 mx_no_host_all_worldclim <- maxent(predictors, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_no_host_all_worldclim@results
 mx_no_host_all_worldclim@lambdas
@@ -482,74 +482,117 @@ max(df_no_host_all_worldclim2$Suitability)
 plot(wrld_simpl)
 points(filter(df_no_host_all_worldclim, Suitability >= .6912), col="red")
 
+#### No Host K-fold ####
+mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_no_host_k_fold@results
+mx_no_host_k_fold@lambdas
+
+#### No Host No Split ####
+mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_no_host_all_occs@results
+mx_no_host_all_occs@lambdas
+response(mx_no_host_all_occs)
+plot(mx_no_host_all_occs)
+
 #####
 
-# Native Only####
+# Maxent Models for Native Only ####
 
 #####
-mx_native_host_all_worldclim <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE'))
-mx_native_host_all_worldclim
-mx_native_host_all_worldclim@results
-mx_native_host_all_worldclim@lambdas
-response(mx_native_host_all_worldclim)
-plot(mx_native_host_all_worldclim)
-mx_native_host_all_worldclim@results
+mx_two_native_host <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_two_native_host
+mx_two_native_host@results
+mx_two_native_host@lambdas
+response(mx_two_native_host)
+plot(mx_two_native_host)
+mx_two_native_host@results
 
 #Model Evaluation 
-e_native_host_all_worldclim <- evaluate(test, backg_test, mx_native_host_all_worldclim, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_native_host_all_worldclim #shows number of presences/absences/AUC and cor
-px_native_host_all_worldclim <- predict(predictors_ocw_and_cw, mx_native_host_all_worldclim) #make predictions of habitat suitability can include argument ext=ext
+e_two_native_host <- evaluate(test, backg_test, mx_two_native_host, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_two_native_host #shows number of presences/absences/AUC and cor
+# px_native_host_all_worldclim <- predict(predictors_ocw_and_cw, mx_two_native_host) #make predictions of habitat suitability can include argument ext=ext
 # plot(px_native_host_all_worldclim2, main= 'Maxent, raw values')
-tr_native_host_all_worldclim2 <- threshold(e_native_host_all_worldclim2, 'spec_sens' )
-tr_native_host_all_worldclim2
+# tr_native_host_all_worldclim2 <- threshold(e_two_native_host, 'spec_sens' )
+# tr_native_host_all_worldclim2
 # plot(px_native_host_all_worldclim2 > tr_native_host_all_worldclim2)
-plot(e_native_host_all_worldclim2, 'ROC')
+plot(e_two_native_host, 'ROC')
 
-#Plotting Maxent output
-map.native.all.worldclim2 <- rasterToPoints(px_native_host_all_worldclim2) #make predictions raster a set of points for ggplot
-df_native_host_all_worldclim2 <- data.frame(map.native.all.worldclim2) #convert to data.frame
-head(df_native_host_all_worldclim2)
-colnames(df_native_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
-max(df_native_host_all_worldclim2$Suitability)
-plot(wrld_simpl)
-points(filter(df_native_host_all_worldclim2, Suitability >= .7332606), col="red")
+# #Plotting Maxent output
+# map.native.all.worldclim <- rasterToPoints(px_native_host_all_worldclim2) #make predictions raster a set of points for ggplot
+# df_native_host_all_worldclim <- data.frame(map.native.all.worldclim2) #convert to data.frame
+# head(df_native_host_all_worldclim)
+# colnames(df_native_host_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+# plot(wrld_simpl)
+# max(df_native_host_all_worldclim$Suitability)
+# plot(wrld_simpl)
+# points(filter(df_native_host_all_worldclim, Suitability >= .7332606), col="red")
 
-# All hosts#####
-mx_all_host_all_worldclim <- maxent(predictors_all_hosts, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-mx_all_host_all_worldclim@results
-mx_all_host_all_worldclim@lambdas
-response(mx_all_host_all_worldclim)
-plot(mx_all_host_all_worldclim)
+#### Native Only K-fold ####
+
+mx_two_native_host_k_fold <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_two_native_host_k_fold@results
+mx_two_native_host_k_fold@lambdas
+
+#### Native Only No Split ####
+mx_two_native_host_all_occs <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_two_native_host_all_occs@results
+mx_two_native_host_all_occs@lambdas
+response(mx_two_native_host_all_occs)
+plot(mx_two_native_host_all_occs)
+mx_two_native_host_all_occs@results
+
+####
+
+# MaxEnt models for two native one novel #####
+mx_two_native_one_novel <- maxent(predictors_two_native_one_novel, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_two_native_one_novel@results
+mx_two_native_one_novel@lambdas
+response(mx_two_native_one_novel)
+plot(mx_two_native_one_novel)
 
 # Model Evaluation
-e_all_host_all_worldclim <- evaluate(test, backg_test, mx_all_host_all_worldclim, predictors_all_hosts) #evalute test points, pseudo-absences (random background points), the model and predictors
-e_all_host_all_worldclim #shows number of presences/absences/AUC and cor
-px_all_host_all_worldclim <- predict(predictors_all_hosts, mx_all_host_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
-plot(px_all_host_all_worldclim, main= 'Maxent, raw values')
-writeRaster(px_all_host_all_worldclim, filename="allhost_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+e_two_native_one_novel <- evaluate(test, backg_test, mx_two_native_one_novel, predictors_two_native_one_novel) #evalute test points, pseudo-absences (random background points), the model and predictors
+e_two_native_one_novel #shows number of presences/absences/AUC and cor
+# px_two_native_one_novel <- predict(predictors_two_native_one_novel, mx_two_native_one_novel, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
+# plot(px_two_native_one_novel, main= 'Maxent, raw values')
+# writeRaster(px_two_native_one_novel, filename="allhost_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
-points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_all_host_all_worldclim <- threshold(e_all_host_all_worldclim2, 'spec_sens' )
-tr_all_host_all_worldclim
-plot(px_all_host_all_worldclim > tr_all_host_all_worldclim, main='presence/absence')
-writeRaster(px_all_host_all_worldclim, "test.bil", format = "EHdr")
-
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-points(train, pch= '+')
-plot(e_all_host_all_worldclim2, 'ROC')
+# plot(wrld_simpl, add=TRUE, border= 'dark grey' )
+# points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
+# points(test, pch=16, cex=.15, col="purple") #map of testing points
+# tr_all_host_all_worldclim <- threshold(e_all_host_all_worldclim2, 'spec_sens' )
+# tr_all_host_all_worldclim
+# plot(px_two_native_one_novel > tr_all_host_all_worldclim, main='presence/absence')
+# writeRaster(px_two_native_one_novel, "test.bil", format = "EHdr")
+plot(e_two_native_one_novel, 'ROC')
 
 #Plotting Maxent output
-map.all.host.all.worldclim2 <- rasterToPoints(px_all_host_all_worldclim2) #make predictions raster a set of points for ggplot
-df_all_host_all_worldclim2 <- data.frame(map.all.host.all.worldclim2) #convert to data.frame
-head(df_all_host_all_worldclim2)
-colnames(df_all_host_all_worldclim2) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+map_two_native_one_novel <- rasterToPoints(px_two_native_one_novel) #make predictions raster a set of points for ggplot
+df_two_native_one_novel <- data.frame(map_two_native_one_novel) #convert to data.frame
+head(df_two_native_one_novel)
+colnames(df_two_native_one_novel) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 plot(wrld_simpl)
-max(df_all_host_all_worldclim2$Suitability)
+max(df_two_native_one_novel$Suitability)
 plot(wrld_simpl)
-points(filter(df_all_host_all_worldclim2, Suitability >= .77572), col="red")
+points(filter(df_two_native_one_novel, Suitability >= .77572), col="red")
+
+#### k-fold 2 native one novel ####
+
+mx_two_native_one_novel_k_fold <- maxent(predictors_two_native_one_novel, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_two_native_one_novel_k_fold@results
+
+#### all occurrences, two native one novel ####
+mx_two_native_one_novel_all_occs <- maxent(predictors_two_native_one_novel, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_two_native_one_novel_all_occs@results
+mx_two_native_one_novel_all_occs@lambdas
+response(mx_two_native_one_novel_all_occs)
+plot(mx_two_native_one_novel_all_occs)
+
+#####
+
+# PLOTTING 
+
+#####
 
 #Combining all hosts / no hosts
 combining_all_and_no_hosts <- data.frame(df_no_host_all_worldclim2$Suitability,df_all_host_all_worldclim2$Suitability)
@@ -608,27 +651,6 @@ writeRaster(raster_of_heatmap, filename="heatmap_test_whydah.tif", format="GTiff
 
 #####
 
-# Model w/ Replicates
-
-#####
-#no host
-mx_no_host_all_worldclim_replicates <- maxent(predictors, thin_ptw2_coords, args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
-mx_no_host_all_worldclim_replicates
-mx_no_host_all_worldclim_replicates@results
-
-#native hosts#
-
-mx_native_host_replicates <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
-mx_native_host_replicates
-mx_native_host_replicates@results
-
-#all hosts
-mx_all_host_replicates <- maxent(predictors_all_hosts, thin_ptw2_coords, args=c('betamultiplier=3','responsecurves=TRUE','replicates=10','writebackgroundpredictions=TRUE'))
-mx_all_host_replicates
-mx_all_host_replicates@results
-
-#####
-
 # Calculating Schoner's D
 
 ####
@@ -647,11 +669,4 @@ all_grid <- sp.from.asc(all_host_asc)
 
 no <- niche.overlap(list(no.host = no_grid, native.host = native_grid, all.hosts = all_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
-
-###
-
-# Code for ENMeval
-
-####
-
 
