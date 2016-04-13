@@ -485,14 +485,28 @@ points(filter(df_no_host_all_worldclim, Suitability >= .6912), col="red")
 #### No Host K-fold ####
 mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_no_host_k_fold@results
-mx_no_host_k_fold@lambdas
 
-#### No Host No Split ####
+#### No Host All occurrences for final model ####
 mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_no_host_all_occs
 mx_no_host_all_occs@results
 mx_no_host_all_occs@lambdas
 response(mx_no_host_all_occs)
 plot(mx_no_host_all_occs)
+
+px_no_host_all_occs <- predict(predictors, mx_no_host_all_occs) #make predictions of habitat suitability can include argument ext=ext
+plot(px_no_host_all_occs, main= 'Maxent, raw values')
+writeRaster(px_no_host_all_occs, filename="no_hosts_all_occs_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+#where is suitability highest?
+map_no_host_all_occs <- rasterToPoints(px_no_host_all_occs) #make predictions raster a set of points for ggplot
+df_no_host_all_occs <- data.frame(map_no_host_all_occs) #convert to data.frame
+head(df_no_host_all_occs)
+colnames(df_no_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+plot(wrld_simpl)
+max(df_no_host_all_occs$Suitability)
+plot(wrld_simpl)
+points(filter(df_no_host_all_occs, Suitability >= .84), col="red")
 
 #####
 
@@ -531,7 +545,6 @@ plot(e_two_native_host, 'ROC')
 
 mx_two_native_host_k_fold <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_two_native_host_k_fold@results
-mx_two_native_host_k_fold@lambdas
 
 #### Native Only No Split ####
 mx_two_native_host_all_occs <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
@@ -540,6 +553,20 @@ mx_two_native_host_all_occs@lambdas
 response(mx_two_native_host_all_occs)
 plot(mx_two_native_host_all_occs)
 mx_two_native_host_all_occs@results
+
+px_two_native_host_all_occs <- predict(predictors_ocw_and_cw, mx_two_native_host_all_occs) #make predictions of habitat suitability can include argument ext=ext
+plot(px_two_native_host_all_occs, main= 'Maxent, raw values')
+writeRaster(px_two_native_host_all_occs, filename="two_native_hosts_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+#where is suitability highest?
+map_two_native_host_all_occs <- rasterToPoints(px_two_native_host_all_occs) #make predictions raster a set of points for ggplot
+df_two_native_host_all_occs <- data.frame(map_two_native_host_all_occs) #convert to data.frame
+head(df_two_native_host_all_occs)
+colnames(df_two_native_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+plot(wrld_simpl)
+max(df_two_native_host_all_occs$Suitability)
+plot(wrld_simpl)
+points(filter(df_two_native_host_all_occs, Suitability >= .81), col="red")
 
 ####
 
@@ -587,6 +614,20 @@ mx_two_native_one_novel_all_occs@results
 mx_two_native_one_novel_all_occs@lambdas
 response(mx_two_native_one_novel_all_occs)
 plot(mx_two_native_one_novel_all_occs)
+
+px_two_native_host_one_novel_all_occs <- predict(predictors_two_native_one_novel, mx_two_native_one_novel_all_occs) #make predictions of habitat suitability can include argument ext=ext
+plot(px_two_native_host_one_novel_all_occs, main= 'Maxent, raw values')
+writeRaster(px_two_native_host_one_novel_all_occs, filename="two_native_hosts_one_novel_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+#where is suitability highest?
+map_two_native_one_novel_host_all_occs <- rasterToPoints(px_two_native_host_one_novel_all_occs) #make predictions raster a set of points for ggplot
+df_two_native_one_novel_host_all_occs <- data.frame(map_two_native_one_novel_host_all_occs) #convert to data.frame
+head(df_two_native_one_novel_host_all_occs)
+colnames(df_two_native_one_novel_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+plot(wrld_simpl)
+max(df_two_native_one_novel_host_all_occs$Suitability)
+plot(wrld_simpl)
+points(filter(df_two_native_one_novel_host_all_occs, Suitability >= .86), col="red")
 
 #####
 
