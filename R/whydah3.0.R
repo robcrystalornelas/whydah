@@ -45,11 +45,11 @@ ptw.unique<-filter(ptw.unique, country !=c("United Arab Emirates"))
 
 filter(ptw.unique, lon<(-80) & lat>30 & country=="United States") #find Chicago point
 which(ptw.unique$lon == -82.9989, ptw.unique$lat== 39.96110) #find it in the data.frame
-ptw.unique<- ptw.unique[-4522,] #remove that row!
+ptw.unique<- ptw.unique[-4530,] #remove that row!
 
 filter(ptw.unique, lon<(-122) & lat>35 & country=="United States") #find San Fran point
 which(ptw.unique$lon == -122.511, ptw.unique$lat== 37.7777)
-ptw.unique<-ptw.unique[-1312,] #remove san fran point
+ptw.unique<-ptw.unique[-1311,] #remove san fran point
 
 # only complete cases
 ptw.unique<-ptw.unique[complete.cases(ptw.unique),]
@@ -130,7 +130,7 @@ unique(ocw.unique$country)
 #Remove outliers by lon/lat
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find northern midwest point
 which(ocw.unique$lon == -95.55926, ocw.unique$lat== 29.69430) #find it in the data.frame
-ocw.unique<- ocw.unique[-404,] #remove that row!
+ocw.unique<- ocw.unique[-407,] #remove that row!
 
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find 2nd midwest points
 points(-96.67213,40.80549,col="green") #make sure it's the right one
@@ -172,11 +172,6 @@ points(ocw.unique,col="red")
 ocw.unique<-ocw.unique[complete.cases(ocw.unique),]
 dim(ocw.unique)
 
-#checking for any zero values
-lonzero = subset(ocw.unique, lon==0) #any points have longitude that was auto-set to 0
-lonzero
-duplicated(ocw.unique) #any duplicates?
-
 #Thin OCW ####
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
@@ -199,7 +194,7 @@ write.SpThin(
   coords=FALSE,
   dir=tempdir()
 )
-?spThin
+
 #can elect to read in .csv of all thinned points
 thin_ocw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ocw2) #Always check to make sure this shows correct species
@@ -230,7 +225,6 @@ cw.unique<-filter(cw.unique, country !="United Arab Emirates") #remove UAE (list
 unique(cw.unique$country)
 
 #Remove Common Waxbill outliers by lon/lat
-#click()
 filter(cw.unique, lon<(-72) & lat>(35)) #find northern midwest point
 points(-77.22568,38.97612)
 which(cw.unique$lon == -77.22568, cw.unique$lat== 38.97612) #find it in the data.frame
@@ -239,11 +233,6 @@ cw.unique<- cw.unique[-6046,] #remove that row!
 #Check Common Waxbill Points
 plot(wrld_simpl)
 points(cw.unique, col="red")
-
-#Clean Up the Data
-lonzero = subset(cw.unique, lon==0) #any points have longitude that was auto-set to 0
-lonzero #all OK
-duplicated(cw.unique) #any duplicates?
 
 #thin Common Waxbill
 setwd("~/Desktop/Whydah Project/whydah/Output")
@@ -297,7 +286,6 @@ nutmeg.unique<-filter(nutmeg.unique, country !="Honduras") #Remove Honduras
 unique(nutmeg.unique$country)
 
 # Remove outliers by lon/lat...for nutmegs these include museum speciments and acoustic labs in US
-# click()
 points(-94, 38, col='green') #This is acoustic lab point
 which(nutmeg.unique$lon == -94, nutmeg.unique$lat== 38) #find it in the data.frame
 nutmeg.unique<- nutmeg.unique[-9269,] #remove that row!
@@ -322,11 +310,6 @@ points(nutmeg.unique, col="red")
 #only complete cases
 nutmeg.unique<-nutmeg.unique[complete.cases(nutmeg.unique),]
 dim(nutmeg.unique)
-
-#checking for any zero values
-lonzero = subset(nutmeg.unique, lon==0) #any points have longitude that was auto-set to 0
-lonzero
-which(duplicated(nutmeg.unique)==TRUE) #any duplicates?
 
 #Thin Nutmeg ####
 setwd("~/Desktop/Whydah Project/whydah/Output")
@@ -415,31 +398,41 @@ pa_raster_nutmeg
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc2", pattern="bil", full.names=TRUE)
 
 mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since they are all from whole world)
-set.seed(1963) #makes sure we're generating random numbers
+set.seed(23) #makes sure we're generating the same random numbers
 
 #Created custom sets of predictors
 predictors<-stack(files)
 predictors_ocw_and_cw <- stack(files, pa_raster_cw, pa_raster_ocw)
 predictors_two_native_one_novel<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg)
 
-#background points
-backg <- randomPoints(predictors_no_host, n=10000, ext = (extent(-119, 55.4539,-33,23))) #pull background points from specified extent
+#background points from BOUNDING BOX
+# backg <- randomPoints(predictors_no_host, n=10000, ext = (extent(-119, 55.4539,-33,23))) #pull background points from specified extent
+# plot(backg)
 
-#From occurrence records...bounding box is. y (lat) min = -34.8324, ymax=41.526  /  x (lon) min = -118.808, xmax = 55.4539
-#ext = extent(-90, -32, -33, 23) #to speed up how quickly everything processes, so limit our extent
-#Format for extent is (xmin,xmax,ymin,ymax)
-colnames(backg) = c('lon' , 'lat')
-group <- kfold(backg, 4)
-backg_train <- backg[group != 1, ]
-backg_test <- backg[group == 1, ]
+#background from mcp
+set.seed(23)
+backg_mcp <- mcp(thin_ptw2_coords)
+plot(wrld_simpl)
+points(thin_ptw2_coords, col = "cyan4", cex = .5)
+plot(backg_mcp, add = T)
 
-ext<-extent(-119, 55.4539,-33,23)
-
+#getting background points from mcp
+predictors2 <- predictors
+env_mask_whydah <- mask(predictors2, backg_mcp)
+env_crop_whydah <- crop(env_mask_whydah, backg_mcp)
+backg_mcp<-randomPoints(env_crop_whydah[[1]],n=10000)
 plot(wrld_simpl,main="Background Points with \nExtent Limited to Whydah Distribution")
-points(backg, cex=.3, col="purple")
+points(backg_mcp, cex=.3, col="purple")
+
+#Format for extent is (xmin,xmax,ymin,ymax)
+colnames(backg_mcp) = c('lon' , 'lat')
+group <- kfold(backg_mcp, 5)
+backg_train <- backg_mcp[group != 1, ]
+backg_test <- backg_mcp[group == 1, ]
+
 
 #Prepare Training and Testing dataset####
-folds<-kfold(thin_ptw2_coords, k=4) #this is a 4 fold test
+folds<-kfold(thin_ptw2_coords, k=5) #this is a 4 fold test
 train<-thin_ptw2_coords[folds>1,] #training has 75% of points
 test<-thin_ptw2_coords[folds==1,] #testing has 25% of points
 train<-train[,1:2]
@@ -455,39 +448,23 @@ head(train) #just has lon/lat
 # no host split sample approach ####
 mx_no_host_all_worldclim <- maxent(predictors, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_no_host_all_worldclim@results
-mx_no_host_all_worldclim@lambdas
-response(mx_no_host_all_worldclim)
 plot(mx_no_host_all_worldclim)
 
-#Model Evaluation 
+#Model Evaluation
 e_no_host_all_worldclim <- evaluate(test, backg_test, mx_no_host_all_worldclim, predictors) #evalute test points, pseudo-absences (random background points), the model and predictors
 e_no_host_all_worldclim #shows number of presences/absences/AUC and cor
 px_no_host_all_worldclim <- predict(predictors, mx_no_host_all_worldclim, progress= "" ) #make predictions of habitat suitability can include argument ext=ext
-plot(px_no_host_all_worldclim, main= 'Maxent, raw values')
-plot(wrld_simpl, add=TRUE, border= 'dark grey' )
-points(train, pch=16, cex=.15, col="cadetblue3") #map of training points
-points(test, pch=16, cex=.15, col="purple") #map of testing points
-tr_no_host_all_worldclim <- threshold(e_no_host_all_worldclim2, 'spec_sens' )
+tr_no_host_all_worldclim <- threshold(e_no_host_all_worldclim, 'spec_sens' )
 tr_no_host_all_worldclim
 plot(px_no_host_all_worldclim > tr_no_host_all_worldclim, main='presence/absence')
 plot(e_no_host_all_worldclim, 'ROC')
 
-#Plotting Maxent output
-map.no.host.all.worldclim <- rasterToPoints(px_no_host_all_worldclim) #make predictions raster a set of points for ggplot
-df_no_host_all_worldclim <- data.frame(map.no.host.all.worldclim) #convert to data.frame
-head(df_no_host_all_worldclim)
-colnames(df_no_host_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
-max(df_no_host_all_worldclim2$Suitability)
-plot(wrld_simpl)
-points(filter(df_no_host_all_worldclim, Suitability >= .6912), col="red")
-
 #### No Host K-fold ####
-mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg_mcp, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_no_host_k_fold@results
 
 #### No Host All occurrences for final model ####
-mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg_mcp, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_no_host_all_occs
 mx_no_host_all_occs@results
 mx_no_host_all_occs@lambdas
@@ -506,7 +483,12 @@ colnames(df_no_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriat
 plot(wrld_simpl)
 max(df_no_host_all_occs$Suitability)
 plot(wrld_simpl)
-points(filter(df_no_host_all_occs, Suitability >= .84), col="red")
+points(filter(df_no_host_all_occs, Suitability >= .8), col="red")
+
+# Threshold
+training_suitability_no_host <- extract(px_no_host_all_occs, thin_ptw2_coords) #all predicted values, all occs
+ten_thresh_no_host <- quantile(training_suitability_no_host, 0.1, na.rm = TRUE)
+
 
 #####
 
@@ -516,10 +498,7 @@ points(filter(df_no_host_all_occs, Suitability >= .84), col="red")
 mx_two_native_host <- maxent(predictors_ocw_and_cw, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_two_native_host
 mx_two_native_host@results
-mx_two_native_host@lambdas
-response(mx_two_native_host)
 plot(mx_two_native_host)
-mx_two_native_host@results
 
 #Model Evaluation 
 e_two_native_host <- evaluate(test, backg_test, mx_two_native_host, predictors_ocw_and_cw) #evalute test points, pseudo-absences (random background points), the model and predictors
@@ -529,25 +508,13 @@ e_two_native_host #shows number of presences/absences/AUC and cor
 # tr_native_host_all_worldclim2 <- threshold(e_two_native_host, 'spec_sens' )
 # tr_native_host_all_worldclim2
 # plot(px_native_host_all_worldclim2 > tr_native_host_all_worldclim2)
-plot(e_two_native_host, 'ROC')
-
-# #Plotting Maxent output
-# map.native.all.worldclim <- rasterToPoints(px_native_host_all_worldclim2) #make predictions raster a set of points for ggplot
-# df_native_host_all_worldclim <- data.frame(map.native.all.worldclim2) #convert to data.frame
-# head(df_native_host_all_worldclim)
-# colnames(df_native_host_all_worldclim) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-# plot(wrld_simpl)
-# max(df_native_host_all_worldclim$Suitability)
-# plot(wrld_simpl)
-# points(filter(df_native_host_all_worldclim, Suitability >= .7332606), col="red")
 
 #### Native Only K-fold ####
-
-mx_two_native_host_k_fold <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_two_native_host_k_fold <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg_mcp, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_two_native_host_k_fold@results
 
 #### Native Only No Split ####
-mx_two_native_host_all_occs <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_two_native_host_all_occs <- maxent(predictors_ocw_and_cw, thin_ptw2_coords, a=backg_mcp, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_two_native_host_all_occs@results
 mx_two_native_host_all_occs@lambdas
 response(mx_two_native_host_all_occs)
@@ -563,14 +530,21 @@ map_two_native_host_all_occs <- rasterToPoints(px_two_native_host_all_occs) #mak
 df_two_native_host_all_occs <- data.frame(map_two_native_host_all_occs) #convert to data.frame
 head(df_two_native_host_all_occs)
 colnames(df_two_native_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
 max(df_two_native_host_all_occs$Suitability)
 plot(wrld_simpl)
-points(filter(df_two_native_host_all_occs, Suitability >= .81), col="red")
+points(filter(df_two_native_host_all_occs, Suitability >= .82), col="red")
+
+# Threshold
+training_suitability_two_native_host <- extract(px_two_native_host_all_occs, thin_ptw2_coords) #all predicted values, all occs
+ten_thresh_two_native_host <- quantile(training_suitability_two_native_host, 0.1, na.rm = TRUE)
+ten_thresh_two_native_host
 
 ####
 
 # MaxEnt models for two native one novel #####
+
+#####
+
 mx_two_native_one_novel <- maxent(predictors_two_native_one_novel, train, a=backg_train, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_two_native_one_novel@results
 mx_two_native_one_novel@lambdas
@@ -593,23 +567,13 @@ e_two_native_one_novel #shows number of presences/absences/AUC and cor
 # writeRaster(px_two_native_one_novel, "test.bil", format = "EHdr")
 plot(e_two_native_one_novel, 'ROC')
 
-#Plotting Maxent output
-map_two_native_one_novel <- rasterToPoints(px_two_native_one_novel) #make predictions raster a set of points for ggplot
-df_two_native_one_novel <- data.frame(map_two_native_one_novel) #convert to data.frame
-head(df_two_native_one_novel)
-colnames(df_two_native_one_novel) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
-max(df_two_native_one_novel$Suitability)
-plot(wrld_simpl)
-points(filter(df_two_native_one_novel, Suitability >= .77572), col="red")
-
 #### k-fold 2 native one novel ####
 
-mx_two_native_one_novel_k_fold <- maxent(predictors_two_native_one_novel, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=4','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_two_native_one_novel_k_fold <- maxent(predictors_two_native_one_novel, thin_ptw2_coords, a=backg_mcp, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_two_native_one_novel_k_fold@results
 
 #### all occurrences, two native one novel ####
-mx_two_native_one_novel_all_occs <- maxent(predictors_two_native_one_novel, thin_ptw2_coords, a=backg, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_two_native_one_novel_all_occs <- maxent(predictors_two_native_one_novel, thin_ptw2_coords, a=backg_mcp, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_two_native_one_novel_all_occs@results
 mx_two_native_one_novel_all_occs@lambdas
 response(mx_two_native_one_novel_all_occs)
@@ -624,70 +588,41 @@ map_two_native_one_novel_host_all_occs <- rasterToPoints(px_two_native_host_one_
 df_two_native_one_novel_host_all_occs <- data.frame(map_two_native_one_novel_host_all_occs) #convert to data.frame
 head(df_two_native_one_novel_host_all_occs)
 colnames(df_two_native_one_novel_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
 max(df_two_native_one_novel_host_all_occs$Suitability)
 plot(wrld_simpl)
-points(filter(df_two_native_one_novel_host_all_occs, Suitability >= .86), col="red")
+points(filter(df_two_native_one_novel_host_all_occs, Suitability >= .83), col="red")
 
-#####
-
-# PLOTTING 
-
-#####
-
-#Combining all hosts / no hosts
-combining_all_and_no_hosts <- data.frame(df_no_host_all_worldclim2$Suitability,df_all_host_all_worldclim2$Suitability)
-
-names(combining_all_and_no_hosts) <- c('none','all')
-all_and_none_combined_scaled<-scale(combining_all_and_no_hosts, center = TRUE, scale = TRUE)
-all_and_none_combined_scaled<-as.data.frame(all_and_none_combined_scaled)
-all_and_none_combined_scaled$subtracted <- (all_and_none_combined_scaled$all - all_and_none_combined_scaled$none)
-all_and_none_combined_scaled$lon <- df_no_host_all_worldclim2$lon
-all_and_none_combined_scaled$lat <- df_no_host_all_worldclim2$lat
-
-head(all_and_none_combined_scaled)
-
-min(all_and_none_combined_scaled$subtracted) #calbriate min and max of plots
-max(all_and_none_combined_scaled$subtracted)
-
-library(scales)
-
-#exporting this data.frame
-all_and_none_combined_scaled2<-all_and_none_combined_scaled[,c(4,5,3)]
-pts<-all_and_none_combined_scaled2
-names(pts)<-c("x","y","subtracted")
-coordinates(pts)=~x+y
-proj4string(pts)=CRS("+init=epsg:4326") # set it to lat-long
-pts = spTransform(pts,CRS("+init=epsg:4326"))
-gridded(pts) = TRUE
-r <- raster(pts)
-projection(r) = CRS("+init=epsg:4326")
-plot(r)
-writeRaster(r,"whydah_subtracted_predictions.tif")
-
+# Threshold
+training_suitability_two_native_one_novel_host <- extract(px_two_native_host_one_novel_all_occs, thin_ptw2_coords) #all predicted values, all occs
+ten_thresh_two_native_one_novel_host <- quantile(training_suitability_two_native_one_novel_host, 0.1, na.rm = TRUE)
+ten_thresh_two_native_one_novel_host
 
 #####
 
 # Heatmap of suitable regions
 
 ####
-df_no_host_all_worldclim_pres <- df_no_host_all_worldclim2 %>% mutate(pres_no_host = ifelse(Suitability >= 0.4087746, 1, 0))
-df_native_host_all_worldclim_pres <- df_native_host_all_worldclim2 %>% mutate(pres_native_host = ifelse(Suitability >= 0.3712534, 1, 0))
-df_all_host_all_worldclim_pres <- df_all_host_all_worldclim2 %>% mutate(pres_all_host = ifelse(Suitability >= .3772382, 1, 0))
+df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2600085, 1, 0))
+df_two_native_host_pres <- df_two_native_host_all_occs %>% mutate(pres_two_native_host = ifelse(Suitability >= 0.24947, 1, 0))
+df_two_native_one_novel_host_pres <- df_two_native_one_novel_host_all_occs %>% mutate(pres_two_native_one_novel_host = ifelse(Suitability >= 0.2468436, 1, 0))
+df_no_nutmeg_all_host_pres <- df_no_nutmeg_all_hosts %>% mutate(pres_no_nutmeg_all_host = ifelse(Suitability >= 0.2023328, 1, 0))
+df_all_host_pres <- df_all_hosts_all_occs %>% mutate(pres_all_host = ifelse(Suitability >= 0.1960418, 1, 0))
 
-df_partial<- left_join(df_no_host_all_worldclim_pres, df_native_host_all_worldclim_pres, by = c("lon", "lat"))
-head(df_partial)
-df_all_presences <- left_join(df_partial, df_all_host_all_worldclim_pres, by = c("lon", "lat"))
 
-df_all_presences$total <- rowSums(df_all_presences[, c(4, 6, 8)])
-#df_all_presences$total <- as.factor(df_all_presences$total)
+df_all_presences_a <- left_join(df_no_host_pres, df_two_native_host_pres, by = c("lon", "lat"))
+df_all_presences_b <- left_join(df_all_presences_a, df_two_native_one_novel_host_pres, by = c("lon", "lat"))
+df_all_presences_c <- left_join(df_all_presences_b, df_no_nutmeg_all_host_pres, by = c("lon", "lat"))
+df_all_presences_d <- left_join(df_all_presences_c, df_all_host_pres, by = c("lon", "lat"))
+
+head(df_all_presences_d)
+df_all_presences_d$total <- rowSums(df_all_presences_d[, c(4, 6, 8, 10, 12)])
 
 #converting to geotiff
-df_all_presences_2<-df_all_presences[,c(1,2,9)]
-head(df_all_presences_2)
-coordinates(df_all_presences_2) <- ~ lon + lat
-gridded(df_all_presences_2) <- TRUE
-raster_of_heatmap <- raster(df_all_presences_2)
+df_all_presences_combined<-df_all_presences_d[,c(1,2,13)]
+head(df_all_presences_combined)
+coordinates(df_all_presences_combined) <- ~ lon + lat
+gridded(df_all_presences_combined) <- TRUE
+raster_of_heatmap <- raster(df_all_presences_combined)
 writeRaster(raster_of_heatmap, filename="heatmap_test_whydah.tif", format="GTiff", overwrite=TRUE)
 
 #####
@@ -695,6 +630,7 @@ writeRaster(raster_of_heatmap, filename="heatmap_test_whydah.tif", format="GTiff
 # Calculating Schoner's D
 
 ####
+
 #no_host_asc <- writeRaster(px_no_host_all_worldclim, filename = 'nohost.asc', format = "ascii", overwrite = TRUE)
 #native_host_asc <- writeRaster(px_native_host_all_worldclim, filename = "nativehost.asc", format = "ascii")
 #all_host_asc <- writeRaster(px_all_host_all_worldclim, filename = "allhost.asc", format = "ascii")
@@ -711,3 +647,22 @@ all_grid <- sp.from.asc(all_host_asc)
 no <- niche.overlap(list(no.host = no_grid, native.host = native_grid, all.hosts = all_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
 
+###
+
+# Jamies MCP function
+
+####
+mcp <- function (xy) {
+  # handler for spatial objects -- extracts coordinates
+  if (class(xy) == "SpatialPoints" | class(xy) == "SpatialPointsDataFrame") {
+    xy <- as.data.frame(coordinates(xy))
+  }
+  # get mcp indices
+  i <- chull(xy)
+  # get rows in xy for i
+  xy.mcp <- xy[i,]
+  # copy first row to last position to close shape
+  xy.mcp <- rbind(xy.mcp[nrow(xy.mcp),], xy.mcp)
+  # return polygon of mcp
+  return(SpatialPolygons(list(Polygons(list(Polygon(as.matrix(xy.mcp))), 1))))
+}
