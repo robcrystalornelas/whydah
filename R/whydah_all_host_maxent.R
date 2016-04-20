@@ -159,7 +159,7 @@ plot(mx_all_host_all_occs)
 
 px_all_hosts_all_occs <- predict(predictors_all_hosts, mx_all_host_all_occs) #make predictions of habitat suitability can include argument ext=ext
 plot(px_all_hosts_all_occs, main= 'Maxent, raw values')
-writeRaster(px_all_hosts_all_occs, filename="all25_hosts_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+writeRaster(px_all_hosts_all_occs, filename="all_hosts_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
 #Plotting Maxent output
 map_all_hosts_all_occs <- rasterToPoints(px_all_hosts_all_occs) #make predictions raster a set of points for ggplot

@@ -603,27 +603,33 @@ ten_thresh_two_native_one_novel_host
 
 ####
 df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2600085, 1, 0))
-df_two_native_host_pres <- df_two_native_host_all_occs %>% mutate(pres_two_native_host = ifelse(Suitability >= 0.24947, 1, 0))
+#df_two_native_host_pres <- df_two_native_host_all_occs %>% mutate(pres_two_native_host = ifelse(Suitability >= 0.24947, 1, 0))
 df_two_native_one_novel_host_pres <- df_two_native_one_novel_host_all_occs %>% mutate(pres_two_native_one_novel_host = ifelse(Suitability >= 0.2468436, 1, 0))
-df_no_nutmeg_all_host_pres <- df_no_nutmeg_all_hosts %>% mutate(pres_no_nutmeg_all_host = ifelse(Suitability >= 0.2023328, 1, 0))
+#df_no_nutmeg_all_host_pres <- df_no_nutmeg_all_hosts %>% mutate(pres_no_nutmeg_all_host = ifelse(Suitability >= 0.2023328, 1, 0))
 df_all_host_pres <- df_all_hosts_all_occs %>% mutate(pres_all_host = ifelse(Suitability >= 0.1960418, 1, 0))
 
 
-df_all_presences_a <- left_join(df_no_host_pres, df_two_native_host_pres, by = c("lon", "lat"))
-df_all_presences_b <- left_join(df_all_presences_a, df_two_native_one_novel_host_pres, by = c("lon", "lat"))
-df_all_presences_c <- left_join(df_all_presences_b, df_no_nutmeg_all_host_pres, by = c("lon", "lat"))
-df_all_presences_d <- left_join(df_all_presences_c, df_all_host_pres, by = c("lon", "lat"))
+# df_all_presences_a <- left_join(df_no_host_pres, df_two_native_host_pres, by = c("lon", "lat"))
+# df_all_presences_b <- left_join(df_all_presences_a, df_two_native_one_novel_host_pres, by = c("lon", "lat"))
+# df_all_presences_c <- left_join(df_all_presences_b, df_no_nutmeg_all_host_pres, by = c("lon", "lat"))
+# df_all_presences_d <- left_join(df_all_presences_c, df_all_host_pres, by = c("lon", "lat"))
 
-head(df_all_presences_d)
-df_all_presences_d$total <- rowSums(df_all_presences_d[, c(4, 6, 8, 10, 12)])
+# head(df_all_presences_d)
+# df_all_presences_d$total <- rowSums(df_all_presences_d[, c(4, 6, 8, 10, 12)])
+
+df_all_presence_a1 <- left_join(df_no_host_pres, df_two_native_one_novel_host_pres, by = c("lon", "lat"))
+df_all_presence_a2 <- left_join(df_all_presence_a1, df_all_host_pres, by = c("lon", "lat"))
+head(df_all_presence_a2)
+df_all_presence_a2$total <- rowSums(df_all_presence_a2[, c(4, 6, 8)])
+
 
 #converting to geotiff
-df_all_presences_combined<-df_all_presences_d[,c(1,2,13)]
+df_all_presences_combined<-df_all_presence_a2[,c(1,2,9)]
 head(df_all_presences_combined)
 coordinates(df_all_presences_combined) <- ~ lon + lat
 gridded(df_all_presences_combined) <- TRUE
 raster_of_heatmap <- raster(df_all_presences_combined)
-writeRaster(raster_of_heatmap, filename="heatmap_test_whydah.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_of_heatmap, filename="heatmap_whydah.tif", format="GTiff", overwrite=TRUE)
 
 #####
 
@@ -631,20 +637,19 @@ writeRaster(raster_of_heatmap, filename="heatmap_test_whydah.tif", format="GTiff
 
 ####
 
-#no_host_asc <- writeRaster(px_no_host_all_worldclim, filename = 'nohost.asc', format = "ascii", overwrite = TRUE)
-#native_host_asc <- writeRaster(px_native_host_all_worldclim, filename = "nativehost.asc", format = "ascii")
-#all_host_asc <- writeRaster(px_all_host_all_worldclim, filename = "allhost.asc", format = "ascii")
+no_host_asc <- writeRaster(px_no_host_all_occs, filename = 'nohost.asc', format = "ascii", overwrite = TRUE)
+three_host_asc <- writeRaster(px_two_native_host_one_novel_all_occs, filename = "threehost.asc", format = "ascii", overwrite = TRUE)
+all_host_asc <- writeRaster(px_all_hosts_all_occs, filename = "allhost.asc", format = "ascii", overwrite = TRUE)
 
 no_host_asc <- read.asc("nohost.asc")
-native_host_asc <- read.asc("nativehost.asc")
+three_host_asc <- read.asc("threehost.asc")
 all_host_asc <- read.asc("allhost.asc")
-?niche.overlap
 
 no_grid <- sp.from.asc(no_host_asc)
-native_grid <- sp.from.asc(native_host_asc)
+three_host_grid <- sp.from.asc(three_host_asc)
 all_grid <- sp.from.asc(all_host_asc)
 
-no <- niche.overlap(list(no.host = no_grid, native.host = native_grid, all.hosts = all_grid))
+no <- niche.overlap(list(no.host = no_grid, three.host = three_host_grid, all.hosts = all_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
 
 ###
@@ -666,3 +671,7 @@ mcp <- function (xy) {
   # return polygon of mcp
   return(SpatialPolygons(list(Polygons(list(Polygon(as.matrix(xy.mcp))), 1))))
 }
+
+
+### Trying some centroid work
+options(stringsAsFactors=FALSE)
