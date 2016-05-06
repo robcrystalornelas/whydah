@@ -76,7 +76,8 @@ all_species_thinned_after_merge <-
 write.SpThin(all_species_thinned_after_merge,coords=FALSE,dir=tempdir())
 all_hosts_thinned <- read.csv("thin_0001.csv", head=T)
 all_hosts_thinned <- all_hosts_thinned[,1:2]
-
+plot(wrld_simpl)
+points(all_hosts_thinned)
 #PA raster for "all others"
 species <- "AllOtherHosts"
 head(all_hosts_thinned)
@@ -84,7 +85,7 @@ setwd("~/Desktop/Whydah Project/whydah/Data/wc2")
 myRaster <- raster( "bio1.bil") #resolution of 5 second is .08333x.08333, or 10km grid cells. resolution of 2 second is .04166 x .04166
 # create presence absence raster for Common Waxbills using pre-made function
 pa_raster_all_others <- presence.absence.raster(mask.raster=myRaster, species.data=all_hosts_thinned, raster.label=species)
-
+str(pa_raster_all_others)
 predictors_all_hosts_no_nutmeg <- stack(files, pa_raster_cw, pa_raster_ocw, pa_raster_all_others)
 predictors_all_hosts <- stack(files, pa_raster_cw,pa_raster_ocw, pa_raster_nutmeg, pa_raster_all_others)
 
@@ -175,10 +176,79 @@ training_suitability_all_native_one_novel <- extract(px_all_hosts_all_occs, thin
 ten_thresh_all_native_one_novel <- quantile(training_suitability_all_native_one_novel, 0.1, na.rm = TRUE)
 ten_thresh_all_native_one_novel
 
+####
+
+# Whydah model w/ crop circles
+
+####
+whydah_occurrences_spdf <- SpatialPointsDataFrame(coords = thin_ptw2_coords, data = thin_ptw2_coords,
+                                                proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+
+writeOGR(whydah_occurrences_spdf, dsn = ".",layer = "whydah_csv_spdf_as_shp", driver = "ESRI Shapefile")
+
+#now read in the file w/ buffers
+buffered_region <- readGDAL("five_degree_layer_cropped.tif")
+
+#convert buffered region to raster
+buffered_region_raster <- raster(buffered_region) #convert africa map to raster
+backg_five_degree <- randomPoints(buffered_region_raster, n=10000)
+ 
+plot(wrld_simpl)
+points(backg_five_degree, col = "red", cex = 0.25)
+
+mx_whydah_all_host_k_fold_five_degree <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=TRUE','betamultiplier=3','responsecurves=TRUE','replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE'))
+mx_whydah_all_host_k_fold_five_degree
+mx_whydah_all_host_k_fold_five_degree@results
+
+mx_whydah_all_host_all_occs_five_degree <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=TRUE','betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+px_whydah_all_occs_five_degree <- predict(predictors_all_hosts, mx_whydah_all_host_all_occs_five_degree) #make predictions of habitat suitability can include argument ext=ext
+plot(px_whydah_all_occs_five_degree, main= 'Maxent, raw values')
+writeRaster(px_whydah_all_occs_five_degree, filename="whydah_all_host_five_degree_all_occs_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+reference_points <- extract(predictors_all_hosts, thin_ptw2_coords)
+reference_points
+mss <- mess(x = predictors_all_hosts, v = reference_points, full = TRUE)
+plot(predictors_all_hosts[[20]])
+plot(mss)
+?mess
+
+#####
+
+# Lockwood Lab Homework Assignment 
+
+#####
+
+## Where do mynas occur in cold climates
+projection(plot(predictors_all_hosts[[15]]))
+plot(wrld_simpl)
+plot(predictors_all_hosts[[15]])
+points(thin_ptw2_coords, cex = .25, col = "red")
+whydah_points_with_bio_5 <- extract(predictors_all_hosts[[15]], thin_ptw2_coords)
+points(thin_ptw2_coords[2377,])
+which(whydah_points_with_bio_5 < 150)
+#no clamping
+mx_whydah_all_host_no_clamp <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=FALSE','betamultiplier=3','responsecurves=TRUE','replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE'))
+mx_whydah_all_host_no_clamp
+
+mx_whydah_all_host_all_occs_no_clamp <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=FALSE','betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_whydah_all_host_all_occs_no_clamp
+px_whydah_all_host_no_clamp <- predict(predictors_all_hosts, mx_whydah_all_host_all_occs_no_clamp) #make predictions of habitat suitability can include argument ext=ext
+plot(px_whydah_all_host_no_clamp, main= 'Maxent, raw values')
+writeRaster(px_whydah_all_host_no_clamp, filename="whydah_all_host_no_clamp.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+#no bio5
+mx_whydah_all_host_no_bio5 <- maxent(predictors_no5, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=TRUE','betamultiplier=3','responsecurves=TRUE','replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE'))
+mx_whydah_all_host_no_bio5
+
+mx_whydah_all_host_all_occs_no_bio5 <- maxent(predictors_no5, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=TRUE','betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+px_whydah_all_host_no_bio5 <- predict(predictors_no5, mx_whydah_all_host_all_occs_no_bio5) #make predictions of habitat suitability can include argument ext=ext
+plot(px_whydah_all_host_no_bio5, main= 'Maxent, raw values')
+writeRaster(px_whydah_all_host_no_bio5, filename="whydah_all_host_no_bio5.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+#limit to North America
+
 ### Number of params in each model
 # read lambdas file
 rf <- read.table(file.path(curpath, 'species.lambdas'), sep=',', fill=TRUE)
 # record no. of params (restrict df to rows with four values and no 0 in 2nd column)
 p <- nrow(rf[!is.na(rf[3]) & rf[2] != 0,])
-
-str(px_all_hosts_all_occs)

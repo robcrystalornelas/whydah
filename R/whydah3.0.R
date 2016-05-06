@@ -37,7 +37,8 @@ head(ptw)
 ptw.unique<- distinct(select(ptw,lon,lat,country,species)) #remove duplicates
 dim(ptw.unique)
 head(ptw.unique)
-
+plot(wrld_simpl)
+points(ptw.unique)
 # Removing outliers
 unique(ptw.unique$country) #Remove Taiwan Whydahs
 ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.
@@ -401,9 +402,12 @@ mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since
 set.seed(23) #makes sure we're generating the same random numbers
 
 #Created custom sets of predictors
+files
 predictors<-stack(files)
 predictors_ocw_and_cw <- stack(files, pa_raster_cw, pa_raster_ocw)
 predictors_two_native_one_novel<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg)
+predictors_no5 <- dropLayer(predictors_all_hosts, 15)
+names(predictors_no5)
 
 #background points from BOUNDING BOX
 # backg <- randomPoints(predictors_no_host, n=10000, ext = (extent(-119, 55.4539,-33,23))) #pull background points from specified extent
@@ -630,6 +634,8 @@ coordinates(df_all_presences_combined) <- ~ lon + lat
 gridded(df_all_presences_combined) <- TRUE
 raster_of_heatmap <- raster(df_all_presences_combined)
 writeRaster(raster_of_heatmap, filename="heatmap_whydah.tif", format="GTiff", overwrite=TRUE)
+
+
 
 #####
 
