@@ -39,6 +39,7 @@ dim(ptw.unique)
 head(ptw.unique)
 plot(wrld_simpl)
 points(ptw.unique)
+
 # Removing outliers
 unique(ptw.unique$country) #Remove Taiwan Whydahs
 ptw.unique<-filter(ptw.unique, country !=c("Taiwan")) #get rid of Taiwan sightings.
@@ -509,10 +510,18 @@ px_no_host_all_occs <- predict(predictors, mx_no_host_all_occs) #make prediction
 plot(px_no_host_all_occs, main= 'Maxent, raw values')
 writeRaster(px_no_host_all_occs, filename="naitve_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
-# Threshold
-training_suitability_no_host <- extract(px_no_host_all_occs, thin_ptw2_coords) #all predicted values, all occs
-ten_thresh_no_host <- quantile(training_suitability_no_host, 0.1, na.rm = TRUE)
-ten_thresh_no_host
+# Forming Confusion Matrix
+training_suitability_no_host <- extract(px_no_host_all_occs, thin_ptw2_coords) # extract predicted values, at known presence points
+training_suitability_no_host<-na.omit(training_suitability_no_host)
+pred_binary_no_host <- training_suitability_no_host > .2497 #where are known presence greater than threshold?
+length(pred_binary_no_host[pred_binary_no_host==TRUE]) # these are "a" the true positives
+length(pred_binary_no_host[pred_binary_no_host==FALSE]) #these are "c" the false negatives
+
+background_suitability_no_host <- extract(px_no_host_all_occs, backg_five_degree)
+pred_binary_background_no_host <- background_suitability_no_host > .2497
+
+length(pred_binary_background_no_host[pred_binary_background_no_host==TRUE]) #these are "b" the false pos
+length(pred_binary_background_no_host[pred_binary_background_no_host==FALSE]) # these are "d" the true neg 
 
 # Where is suitability highest?
 map_no_host_all_occs <- rasterToPoints(px_no_host_all_occs) #make predictions raster a set of points for ggplot
@@ -548,8 +557,22 @@ writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff
 
 # Threshold
 training_suitability_exotic_model <- extract(px_exotic_model, thin_ptw2_coords) #all predicted values, all occs
+training_suitability_exotic_model <- na.omit(training_suitability_exotic_model)
 ten_thresh_exotic_model <- quantile(training_suitability_exotic_model, 0.1, na.rm = TRUE)
 ten_thresh_exotic_model
+
+# Forming Confusion Matrix
+training_suitability_exotic <- extract(px_exotic_model, thin_ptw2_coords) # extract predicted values, at known presence points
+training_suitability_exotic <- na.omit(training_suitability_exotic)
+pred_binary_exotic <- training_suitability_exotic > .2158 #where are known presence greater than threshold?
+length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
+length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
+
+background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+pred_binary_background_exotic <- background_suitability_exotic > .2158
+
+length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
+length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
 
 # Where is suitability highest?
 map_exotics_all_occs <- rasterToPoints(px_exotic_model) #make predictions raster a set of points for ggplot
@@ -567,7 +590,7 @@ points(filter(df_exotics_all_occs, Suitability >= .84), col="red")
 #####
 
 #import all host data 
-
+# 
 # spot_backed_weaver <- gbif('Ploceus', 'cucullatus', geo = T, removeZeros = T)
 # africa_firefinch <- gbif('Lagonosticta', 'rubricata', geo = T, removeZeros = T)
 # black_bellied_firefinch <- gbif('Lagonosticta', 'rara', geo = T, removeZeros = T)
@@ -652,10 +675,19 @@ px_full_hosts_all_occs <- predict(predictors_all_hosts, mx_full_hosts_all_occs) 
 plot(px_full_hosts_all_occs, main= 'Maxent, raw values')
 writeRaster(px_full_hosts_all_occs, filename="full_hosts_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
-# Threshold
-training_suitability_full_hosts_model <- extract(px_full_hosts_all_occs, thin_ptw2_coords) #all predicted values, all occs
-ten_thresh_full_hosts_model <- quantile(training_suitability_full_hosts_model, 0.1, na.rm = TRUE)
-ten_thresh_full_hosts_model
+# Forming Confusion Matrix
+training_suitability_exotic <- extract(px_exotic_model, thin_ptw2_coords) # extract predicted values, at known presence points
+training_suitability_exotic <- na.omit(training_suitability_exotic)
+pred_binary_exotic <- training_suitability_exotic > .2158 #where are known presence greater than threshold?
+length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
+length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
+
+background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+pred_binary_background_exotic <- background_suitability_exotic > .2158
+
+length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
+length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
+
 
 # Where is suitability highest?
 map_full_hosts_all_occs <- rasterToPoints(px_full_hosts_all_occs)
@@ -731,7 +763,7 @@ plot(mss)
 
 #####
 
-## Where do mynas occur in cold climates
+## Where do whydahs occur in cold climates
 projection(plot(predictors_all_hosts[[15]]))
 plot(wrld_simpl)
 plot(predictors_all_hosts[[15]])
