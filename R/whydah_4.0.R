@@ -25,9 +25,9 @@ library(plyr)
 library(phyloclim)
 library(SDMTools)
 
-#Full occurrence dataset####
-#ptw<-gbif('Vidua', 'macroura', geo=T, removeZeros = T)
-#save(ptw, file="ptw.rdata")
+# Full occurrence dataset####
+# ptw<-gbif('Vidua', 'macroura', geo=T, removeZeros = T)
+# save(ptw, file="ptw.rdata")
 load("ptw.rdata")
 head(ptw)
 dim(ptw)
@@ -91,17 +91,16 @@ write.SpThin(
   dir=tempdir()
 )
 
-#can elect to read in .csv of all thinned points
+# Read in .csv of all thinned points
 thin_ptw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ptw2)
 thin_ptw2_coords<-thin_ptw2[,1:2]
 
-#OCW Occurrence Points####
+# OCW Occurrence Points####
 setwd("~/Desktop/Whydah Project/whydah/Data") #set back to data directory
 
-#OCW Points####
-#ocw<-gbif('Estrilda', 'melpoda', geo=T, removeZeros = T)
-#save(ocw, file="ocw.rdata")
+# ocw<-gbif('Estrilda', 'melpoda', geo=T, removeZeros = T)
+# save(ocw, file="ocw.rdata")
 load("ocw.rdata")
 head(ocw)
 dim(ocw)
@@ -113,7 +112,7 @@ ocw.unique<- distinct(select(ocw,lon,lat,country,species)) #remove duplicates
 dim(ocw.unique)
 head(ocw.unique)
 
-#Removing outliers by country
+# Removing outliers by country
 plot(wrld_simpl)
 points(ocw.unique, col="red")
 
@@ -122,7 +121,7 @@ ocw.unique<-filter(ocw.unique, country !="Canada") #Remove Canada
 ocw.unique<-filter(ocw.unique, country !="Germany") #Remove Germany
 unique(ocw.unique$country)
 
-#Remove outliers by lon/lat
+# Remove outliers by lon/lat
 filter(ocw.unique, lon>(-100) & lon<(-89) & country=="United States") #find northern midwest point
 which(ocw.unique$lon == -95.55926, ocw.unique$lat== 29.69430) #find it in the data.frame
 ocw.unique<- ocw.unique[-407,] #remove that row!
@@ -155,19 +154,19 @@ which(ocw.unique$lat == 38.57520)
 points(-121.4675,38.57520,col="red")
 ocw.unique<-ocw.unique[-859,]
 
-#find 2nd San Fran point
+# Find 2nd San Fran point
 which(ocw.unique$lat == 41.96554)
 ocw.unique<-ocw.unique[-1061,] #remove san fran point
 
-#re-check ocw points
+# Re-check ocw points
 plot(wrld_simpl)
 points(ocw.unique,col="red")
 
-#only complete cases
+# Complete cases
 ocw.unique<-ocw.unique[complete.cases(ocw.unique),]
 dim(ocw.unique)
 
-#Thin OCW ####
+# OCW Thinning ####
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
@@ -182,7 +181,7 @@ summary(thin_ocw)
 str(thin_ocw)
 plot(thin_ocw)
 
-#Saving the thinned file
+# Save thinned file
 print(tempdir())
 write.SpThin(
   thin_ocw,
@@ -190,14 +189,14 @@ write.SpThin(
   dir=tempdir()
 )
 
-#can elect to read in .csv of all thinned points
+# Read in .csv of thinned points
 thin_ocw2<-read.csv("thin_0001.csv", head=T)
 head(thin_ocw2) #Always check to make sure this shows correct species
 
-#Common Waxbill Points####
+# Common Waxbill ####
 setwd("~/Desktop/Whydah Project/whydah/Data") #back to data directory
-#cw<-gbif('Estrilda', 'astrild', geo=T, removeZeros = T)
-#save(cw, file="cw.rdata")
+# cw<-gbif('Estrilda', 'astrild', geo=T, removeZeros = T)
+# save(cw, file="cw.rdata")
 load("cw.rdata")
 head(cw)
 dim(cw)
@@ -209,7 +208,7 @@ cw.unique<- distinct(select(cw,lon,lat,country,species)) #remove duplicates
 dim(cw.unique)
 head(cw.unique)
 
-#Removing Common Waxbill outliers by country
+# Removing outliers by country
 plot(wrld_simpl)
 points(cw.unique, col="red")
 cw.unique<-cw.unique[complete.cases(cw.unique),]
@@ -217,17 +216,17 @@ cw.unique<-filter(cw.unique, country !="Canada")#Remove Canada
 cw.unique<-filter(cw.unique, country !="United Arab Emirates") #remove UAE (listed as escapes)
 unique(cw.unique$country)
 
-#Remove Common Waxbill outliers by lon/lat
+# Remove outliers by lon/lat
 filter(cw.unique, lon<(-72) & lat>(35)) #find northern midwest point
 points(-77.22568,38.97612)
 which(cw.unique$lon == -77.22568, cw.unique$lat== 38.97612) #find it in the data.frame
 cw.unique<- cw.unique[-6046,] #remove that row!
 
-#Check Common Waxbill Points
+# Check Common Waxbill Points
 plot(wrld_simpl)
 points(cw.unique, col="red")
 
-#thin Common Waxbill
+# Thin Common Waxbill
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
@@ -243,7 +242,7 @@ summary(thin_cw)
 str(thin_cw)
 plot(thin_cw)
 
-#Saving the thinned file
+# Save thinned file
 print(tempdir())
 write.SpThin(
   thin_cw,
@@ -251,11 +250,11 @@ write.SpThin(
   dir=tempdir()
 )
 
-#can elect to read in .csv of all thinned points
+# Read .csv of  thinned points
 thin_cw2<-read.csv("thin_0001.csv", head=T)
 head(thin_cw2)
 
-# Bronze Mannakin
+# Bronze Mannakin Occurrences ####
 bronze <- gbif('Lonchura', 'cucullata', geo = T, removeZeros = T)
 bronze<-bronze[,c('lon','lat','country','species')]
 bronze<-subset(bronze, !is.na(lat) & !is.na(lon))
@@ -268,7 +267,7 @@ bronze.unique<-filter(bronze.unique, country !="Canada") #Remove Canada
 plot(wrld_simpl)
 points(bronze.unique)
 
-#Thin Bronze Mannikin
+# Thin Bronze Mannikin
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
@@ -281,7 +280,7 @@ thin_bronze <-spThin(
   great.circle.distance=TRUE)
 summary(thin_bronze)
 
-#Saving the thinned file
+# Save thinned file
 print(tempdir())
 write.SpThin(
   thin_bronze,
@@ -289,12 +288,12 @@ write.SpThin(
   dir=tempdir()
 )
 
-# can elect to read in .csv of all thinned points
+# Read .csv of all thinned points
 thin_bronze2<-read.csv("thin_0001.csv", head=T)
 head(thin_bronze2) #Always check to make sure this shows correct species
 dim(thin_bronze2)
 
-# #Nutmeg Mannakin
+# Nutmeg Mannakin
 # nutmeg<-gbif('Lonchura', 'punctulata', geo=T, removeZeros = T)
 # save(nutmeg, file="nutmeg.rdata")
 load("nutmeg.rdata")
@@ -305,7 +304,7 @@ nutmeg.unique<- distinct(select(nutmeg,lon,lat,country,species)) #remove duplica
 dim(nutmeg.unique)
 head(nutmeg.unique)
 
-# Removing outliers by country
+# Remove outliers by country
 plot(wrld_simpl)
 points(nutmeg.unique, col="red")
 
@@ -332,17 +331,15 @@ points(-83.0189, 39.9961,col="green")
 which(nutmeg.unique$lon == -83.0189, nutmeg.unique$lat== 39.9961) #find it in the data.frame
 nutmeg.unique<- nutmeg.unique[-9114,] #remove that row!
 
-#re-check points for more outliers
+# Re-check points for more outliers
 plot(wrld_simpl)
 points(nutmeg.unique, col="red")
 
-#only complete cases
+# Complete cases
 nutmeg.unique<-nutmeg.unique[complete.cases(nutmeg.unique),]
 dim(nutmeg.unique)
 
-
-
-#Thin Nutmeg ####
+# Thin Nutmeg
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
@@ -357,7 +354,7 @@ summary(thin_nutmeg)
 str(thin_nutmeg)
 plot(thin_nutmeg)
 
-#Saving the thinned file
+# Save thinned file
 print(tempdir())
 write.SpThin(
   thin_nutmeg,
@@ -365,7 +362,7 @@ write.SpThin(
   dir=tempdir()
 )
 
-# can elect to read in .csv of all thinned points
+# Read .csv of thinned points
 thin_nutmeg2<-read.csv("thin_0001.csv", head=T)
 head(thin_nutmeg2) #Always check to make sure this shows correct species
 
@@ -375,7 +372,7 @@ head(thin_nutmeg2) #Always check to make sure this shows correct species
 
 ####
 
-#Function for Presence/Absence Rasters for Host Species by Amy Whitehead
+# Function for Presence/Absence Rasters for Host Species by Amy Whitehead
 presence.absence.raster <- function (mask.raster,species.data,raster.label="") {
   require(raster)
   
@@ -447,13 +444,12 @@ mask <- raster(files[1]) #just sampling from 1 of the worldclim variables (since
 set.seed(1) #makes sure we're generating the same random numbers
 
 # stack predictors
-files
 predictors<-stack(files)
 predictors_ocw_and_cw <- stack(files, pa_raster_cw, pa_raster_ocw)
 predictors_two_native_one_novel<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg)
 predictors_three_native_one_novel<-stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze)
 
-# # Background from MCP
+# Background from MCP
 # set.seed(23)
 # backg_mcp <- mcp(thin_ptw2_coords)
 # plot(wrld_simpl)
@@ -478,7 +474,7 @@ whydah_occurrences_spdf <- SpatialPointsDataFrame(coords = thin_ptw2_coords, dat
 
 writeOGR(whydah_occurrences_spdf, dsn = ".",layer = "whydah_csv_spdf_as_shp_new", driver = "ESRI Shapefile")
 
-#now read in the file w/ buffers
+#now read in the file w/ buffers from QGIS
 buffered_region_five <- readGDAL("five_degree_layer_cropped.tif")
 
 #convert buffered region to raster
@@ -495,10 +491,11 @@ points(backg_five_degree, col = "red", cex = 0.2)
 
 ####
 
+# No host k-fold
 mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_no_host_k_fold@results
 
-#### No Host All occurrences for final model ####
+# No Host all occurrences
 mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_no_host_all_occs
 mx_no_host_all_occs@results
@@ -523,7 +520,7 @@ pred_binary_background_no_host <- background_suitability_no_host > .2497
 length(pred_binary_background_no_host[pred_binary_background_no_host==TRUE]) #these are "b" the false pos
 length(pred_binary_background_no_host[pred_binary_background_no_host==FALSE]) # these are "d" the true neg 
 
-# Where is suitability highest?
+# Highest suitability
 map_no_host_all_occs <- rasterToPoints(px_no_host_all_occs) #make predictions raster a set of points for ggplot
 df_no_host_all_occs <- data.frame(map_no_host_all_occs) #convert to data.frame
 colnames(df_no_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
@@ -532,14 +529,13 @@ max(df_no_host_all_occs$Suitability)
 plot(wrld_simpl)
 points(filter(df_no_host_all_occs, Suitability >= .8), col="red")
 
+#####
+
+# Maxent for Exotic Hosts ####
 
 #####
 
-# Maxent Models for Exotic Model ####
-
-#####
-
-# 5-fold validation
+# k-fold
 mx_exotic_model <- maxent(predictors_three_native_one_novel, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_exotic_model@results
 
@@ -555,13 +551,13 @@ px_exotic_model <- predict(predictors_three_native_one_novel, mx_exotic_model_al
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
-# Threshold
+# 10% Min. Training Pres Threshold
 training_suitability_exotic_model <- extract(px_exotic_model, thin_ptw2_coords) #all predicted values, all occs
 training_suitability_exotic_model <- na.omit(training_suitability_exotic_model)
 ten_thresh_exotic_model <- quantile(training_suitability_exotic_model, 0.1, na.rm = TRUE)
 ten_thresh_exotic_model
 
-# Forming Confusion Matrix
+# Confusion Matrix
 training_suitability_exotic <- extract(px_exotic_model, thin_ptw2_coords) # extract predicted values, at known presence points
 training_suitability_exotic <- na.omit(training_suitability_exotic)
 pred_binary_exotic <- training_suitability_exotic > .2158 #where are known presence greater than threshold?
@@ -574,7 +570,7 @@ pred_binary_background_exotic <- background_suitability_exotic > .2158
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
 length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
 
-# Where is suitability highest?
+# Highest suitability
 map_exotics_all_occs <- rasterToPoints(px_exotic_model) #make predictions raster a set of points for ggplot
 df_exotics_all_occs <- data.frame(map_exotics_all_occs) #convert to data.frame
 colnames(df_exotics_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
@@ -585,12 +581,11 @@ points(filter(df_exotics_all_occs, Suitability >= .84), col="red")
 
 #####
 
-# Prepare Full Hosts Model
+# Prepare Full Hosts Data
 
 #####
 
 #import all host data 
-# 
 # spot_backed_weaver <- gbif('Ploceus', 'cucullatus', geo = T, removeZeros = T)
 # africa_firefinch <- gbif('Lagonosticta', 'rubricata', geo = T, removeZeros = T)
 # black_bellied_firefinch <- gbif('Lagonosticta', 'rara', geo = T, removeZeros = T)
@@ -622,13 +617,13 @@ head(all_species_no_duplicates[[1]])
 all_species_no_nas<- lapply(all_species_no_duplicates, function(i) {i[!is.na(i),]})
 all_species_complete_cases <- lapply(all_species_no_nas, function(i) {i[complete.cases(i),]})
 
-# merging all host data.frames in a list
+# Merge all host data.frames in a list
 merged.data.frame <- Reduce(function(...) merge(..., all=T), all_species_complete_cases)
 head(merged.data.frame)
 
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
-# thin all hosts
+# Thin all hosts
 all_species_thinned_after_merge <-
   spThin(
     merged.data.frame,
@@ -644,15 +639,15 @@ all_hosts_thinned <- all_hosts_thinned[,1:2]
 plot(wrld_simpl)
 points(all_hosts_thinned)
 
-# Generate PA raster for all hosts
+# PA raster for all hosts
 species <- "AllOtherHosts"
 head(all_hosts_thinned)
 setwd("~/Desktop/Whydah Project/whydah/Data/wc2")
 myRaster <- raster( "bio1.bil") #resolution of 5 second is .08333x.08333, or 10km grid cells. resolution of 2 second is .04166 x .04166
 # create presence absence raster for Common Waxbills using pre-made function
 pa_raster_all_others <- presence.absence.raster(mask.raster=myRaster, species.data=all_hosts_thinned, raster.label=species)
+pa_raster_all_others
 str(pa_raster_all_others)
-predictors_all_hosts_no_nutmeg <- stack(files, pa_raster_cw, pa_raster_ocw, pa_raster_all_others)
 predictors_all_hosts <- stack(files, pa_raster_cw,pa_raster_ocw, pa_raster_nutmeg, pa_raster_all_others)
 
 ####
@@ -661,10 +656,11 @@ predictors_all_hosts <- stack(files, pa_raster_cw,pa_raster_ocw, pa_raster_nutme
 
 ####
 
+# k-fold
 mx_full_hosts <- maxent(predictors_all_hosts, thin_ptw2_coords, a = backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_full_hosts@results
 
-## All occurrences for final model
+# All occurrences
 mx_full_hosts_all_occs <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
 mx_full_hosts_all_occs@lambdas
 mx_full_hosts_all_occs@results
@@ -675,21 +671,20 @@ px_full_hosts_all_occs <- predict(predictors_all_hosts, mx_full_hosts_all_occs) 
 plot(px_full_hosts_all_occs, main= 'Maxent, raw values')
 writeRaster(px_full_hosts_all_occs, filename="full_hosts_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
-# Forming Confusion Matrix
-training_suitability_exotic <- extract(px_exotic_model, thin_ptw2_coords) # extract predicted values, at known presence points
-training_suitability_exotic <- na.omit(training_suitability_exotic)
-pred_binary_exotic <- training_suitability_exotic > .2158 #where are known presence greater than threshold?
-length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
-length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
+# Confusion Matrix
+training_suitability_full_hosts <- extract(px_full_hosts_all_occs, thin_ptw2_coords) # extract predicted values, at known presence points
+training_suitability_full_hosts <- na.omit(training_suitability_full_hosts)
+pred_binary_full_hosts <- training_suitability_full_hosts > 0.172 #where are known presence greater than threshold?
+length(pred_binary_full_hosts[pred_binary_full_hosts==TRUE]) # these are "a" the true positives
+length(pred_binary_full_hosts[pred_binary_full_hosts==FALSE]) #these are "c" the false negatives
 
-background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
-pred_binary_background_exotic <- background_suitability_exotic > .2158
+background_suitability_full <- extract(px_full_hosts_all_occs, backg_five_degree)
+pred_binary_background_full <- background_suitability_full > .172
 
-length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
-length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
+length(pred_binary_background_full[pred_binary_background_full==TRUE]) #these are "b" the false pos
+length(pred_binary_background_full[pred_binary_background_full==FALSE]) # these are "d" the true neg 
 
-
-# Where is suitability highest?
+# Highest suitability
 map_full_hosts_all_occs <- rasterToPoints(px_full_hosts_all_occs)
 df_full_hosts_all_occs <- data.frame(map_full_hosts_all_occs) #convert to data.frame
 colnames(df_full_hosts_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
@@ -700,26 +695,73 @@ points(filter(df_full_hosts_all_occs, Suitability >= .87), col="red")
 
 #####
 
-# Heatmap of suitable regions
+# Heatmap
 
 ####
 
-df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2497079, 1, 0))
-df_exotic_host_pres <- df_exotics_all_occs %>% mutate(pres_two_native_one_novel_host = ifelse(Suitability >= 0.2159376, 1, 0))
+df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2497, 1, 0))
+df_no_host_pres <- df_no_host_pres[,c(1,2,4)] #get only binary output
+
+df_exotic_host_pres <- df_exotics_all_occs %>% mutate(pres_two_native_one_novel_host = ifelse(Suitability >= 0.2158, 1, 0))
+df_exotic_host_pres <- df_exotic_host_pres[,c(1,2,4)] #get only binary output
+
 df_full_host_pres <- df_full_hosts_all_occs %>% mutate(pres_all_host = ifelse(Suitability >= 0.1720696, 1, 0))
+df_full_host_pres <- df_full_host_pres[,c(1,2,4)]
 
 df_all_presence_a1 <- left_join(df_no_host_pres, df_exotic_host_pres, by = c("lon", "lat"))
 df_all_presence_a2 <- left_join(df_all_presence_a1, df_full_host_pres, by = c("lon", "lat"))
 head(df_all_presence_a2)
 df_all_presence_a2$total <- rowSums(df_all_presence_a2[, c(4, 6, 8)])
 
-#converting to geotiff
+# Converting Heatmap to geotiff
 df_all_presences_combined<-df_all_presence_a2[,c(1,2,9)]
 head(df_all_presences_combined)
 coordinates(df_all_presences_combined) <- ~ lon + lat
 gridded(df_all_presences_combined) <- TRUE
 raster_of_heatmap <- raster(df_all_presences_combined)
 writeRaster(raster_of_heatmap, filename="heatmap_whydah.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for No Hosts
+
+coordinates(df_no_host_pres) <- ~ lon + lat
+gridded(df_no_host_pres) <- TRUE
+raster_no_host <- raster(df_no_host_pres)
+writeRaster(raster_no_host, filename="no_host_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for exotic host
+coordinates(df_exotic_host_pres) <- ~ lon + lat
+gridded(df_exotic_host_pres) <- TRUE
+raster_exotic_host <- raster(df_exotic_host_pres)
+writeRaster(raster_exotic_host, filename="exotic_host_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for full host
+coordinates(df_full_host_pres) <- ~ lon + lat
+gridded(df_full_host_pres) <- TRUE
+raster_full_host <- raster(df_full_host_pres)
+plot(raster_full_host)
+writeRaster(raster_full_host, filename="full_host_raster.tif", format="GTiff", overwrite=TRUE)
+
+####
+
+# Calculating predicted occupied area for North America
+
+####
+
+# Make object for extent of North America
+north_america_extent <-c(-162,-60,11.5,65)
+
+# No Host Raster of NA
+no_host_north_america_binary <- crop(raster_no_host, north_america_extent)
+sum(na.omit(no_host_north_america_binary@data@values))
+
+# Exotic Host Raster of NA
+exotic_host_north_america_binary <- crop(raster_exotic_host, north_america_extent)
+sum(na.omit(exotic_host_north_america_binary@data@values))
+
+# FUll Host Raster of NA
+full_host_north_america_binary <- crop(raster_full_host, north_america_extent)
+plot(full_host_north_america_binary)
+sum(na.omit(full_host_north_america_binary@data@values))
 
 #####
 
@@ -742,8 +784,6 @@ full_grid <- sp.from.asc(full_asc)
 no <- niche.overlap(list(naive = naive_grid, exotic.host = exotic_grid, full.host = full_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
 
-
-
 #####
 
 # Experimenting with MESS maps
@@ -757,41 +797,8 @@ plot(predictors_all_hosts[[20]])
 plot(mss)
 ?mess
 
-#####
+# Calculate number of parameters in each model ####
 
-# Lockwood Lab Homework Assignment 
-
-#####
-
-## Where do whydahs occur in cold climates
-projection(plot(predictors_all_hosts[[15]]))
-plot(wrld_simpl)
-plot(predictors_all_hosts[[15]])
-points(thin_ptw2_coords, cex = .25, col = "red")
-whydah_points_with_bio_5 <- extract(predictors_all_hosts[[15]], thin_ptw2_coords)
-points(thin_ptw2_coords[2377,])
-which(whydah_points_with_bio_5 < 150)
-
-#no clamping
-mx_whydah_all_host_no_clamp <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=FALSE','betamultiplier=3','responsecurves=TRUE','replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE'))
-mx_whydah_all_host_no_clamp
-
-mx_whydah_all_host_all_occs_no_clamp <- maxent(predictors_all_hosts, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=FALSE','betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-mx_whydah_all_host_all_occs_no_clamp
-px_whydah_all_host_no_clamp <- predict(predictors_all_hosts, mx_whydah_all_host_all_occs_no_clamp) #make predictions of habitat suitability can include argument ext=ext
-plot(px_whydah_all_host_no_clamp, main= 'Maxent, raw values')
-writeRaster(px_whydah_all_host_no_clamp, filename="whydah_all_host_no_clamp.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
-
-#no bio5
-mx_whydah_all_host_no_bio5 <- maxent(predictors_no5, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=TRUE','betamultiplier=3','responsecurves=TRUE','replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE'))
-mx_whydah_all_host_no_bio5
-
-mx_whydah_all_host_all_occs_no_bio5 <- maxent(predictors_no5, thin_ptw2_coords, a=backg_five_degree, args=c('doclamp=TRUE','betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-px_whydah_all_host_no_bio5 <- predict(predictors_no5, mx_whydah_all_host_all_occs_no_bio5) #make predictions of habitat suitability can include argument ext=ext
-plot(px_whydah_all_host_no_bio5, main= 'Maxent, raw values')
-writeRaster(px_whydah_all_host_no_bio5, filename="whydah_all_host_no_bio5.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
-
-### Number of params in each model
 # read lambdas file
 rf <- read.table(file.path(curpath, 'species.lambdas'), sep=',', fill=TRUE)
 # record no. of params (restrict df to rows with four values and no 0 in 2nd column)
