@@ -586,6 +586,7 @@ set.seed(1) #makes sure we're generating the same random numbers
 # stack predictors
 predictors<-stack(files)
 predictors_and_exotic_hosts <- stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
+names(predictors_and_exotic_hosts)
 
 ####################################################################################################
 ########################### Background points from five degree buffer ##############################
@@ -613,62 +614,76 @@ points(backg_five_degree, col = "red", cex = 0.2)
 ####################################################################################################
 
 # No host k-fold
-mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_no_host_k_fold <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, 
+                            args=c('betamultiplier=3','responsecurves=TRUE', 
+                                   'replicatetype=crossvalidate', 'replicates=5',
+                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_no_host_k_fold@results
 
 # No Host all occurrences
-mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
-mx_no_host_all_occs
+mx_no_host_all_occs <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, 
+                              args=c('betamultiplier=3','responsecurves=TRUE',
+                                     'writebackgroundpredictions=TRUE'))
+# mx_no_host_all_occs
 mx_no_host_all_occs@results
 mx_no_host_all_occs@lambdas
 response(mx_no_host_all_occs)
 plot(mx_no_host_all_occs)
 
-px_no_host_all_occs <- predict(predictors, mx_no_host_all_occs) #make predictions of habitat suitability can include argument ext=ext
+px_no_host_all_occs <- predict(predictors, mx_no_host_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
 plot(px_no_host_all_occs, main= 'Maxent, raw values')
-writeRaster(px_no_host_all_occs, filename="naitve_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+# writeRaster(px_no_host_all_occs, filename="naive_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+# Making MESS map
+reference_points <- extract(predictors, thin_ptw2_coords)
+mss <- mess(x=predictors, v=reference_points, full=TRUE)
+plot(mss)
+
+# 10% Min. Training Pres Threshold
+ten_thresh_exotic_model <- quantile(training_suitability_exotic_model, 0.1, na.rm = TRUE)
+ten_thresh_exotic_model
 
 # Forming Confusion Matrix
-training_suitability_no_host <- extract(px_no_host_all_occs, thin_ptw2_coords) # extract predicted values, at known presence points
-training_suitability_no_host<-na.omit(training_suitability_no_host)
-pred_binary_no_host <- training_suitability_no_host > .2497 #where are known presence greater than threshold?
-length(pred_binary_no_host[pred_binary_no_host==TRUE]) # these are "a" the true positives
-length(pred_binary_no_host[pred_binary_no_host==FALSE]) #these are "c" the false negatives
+training_suitability_naive <- extract(px_no_host_all_occs, thin_ptw2_coords) # extract predicted values, at known presence points
+training_suitability_naive<-na.omit(training_suitability_naive)
+ten_thresh_naive_model <- quantile(training_suitability_naive, 0.1, na.rm = TRUE)
+ten_thresh_naive_model
 
-background_suitability_no_host <- extract(px_no_host_all_occs, backg_five_degree)
-pred_binary_background_no_host <- background_suitability_no_host > .2497
+pred_binary_naive <- training_suitability_naive > .2540227 #where are known presence greater than threshold?
+length(pred_binary_naive[pred_binary_naive==TRUE]) # these are "a" the true positives
+length(pred_binary_naive[pred_binary_naive==FALSE]) #these are "c" the false negatives
 
-length(pred_binary_background_no_host[pred_binary_background_no_host==TRUE]) #these are "b" the false pos
-length(pred_binary_background_no_host[pred_binary_background_no_host==FALSE]) # these are "d" the true neg 
+background_suitability_naive <- extract(px_no_host_all_occs, backg_five_degree)
+pred_binary_background_naive <- background_suitability_naive > .2540227
 
-# Highest suitability
-map_no_host_all_occs <- rasterToPoints(px_no_host_all_occs) #make predictions raster a set of points for ggplot
-df_no_host_all_occs <- data.frame(map_no_host_all_occs) #convert to data.frame
-colnames(df_no_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
-max(df_no_host_all_occs$Suitability)
-plot(wrld_simpl)
-points(filter(df_no_host_all_occs, Suitability >= .8), col="red")
+length(pred_binary_background_naive[pred_binary_background_naive==TRUE]) #these are "b" the false pos
+length(pred_binary_background_naive[pred_binary_background_naive==FALSE]) # these are "d" the true neg 
 
 ####################################################################################################
 ################################### MaxEnt for Exotic Hosts ########################################
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(predictors_three_native_one_novel, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE', 'replicatetype=crossvalidate', 'replicates=5','writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+                          args=c('betamultiplier=3','responsecurves=TRUE', 
+                                 'replicatetype=crossvalidate', 'replicates=5',
+                                 'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_exotic_model@results
 
 # all occurrences
-mx_exotic_model_all_occs <- maxent(predictors_three_native_one_novel, thin_ptw2_coords, a=backg_five_degree, args=c('betamultiplier=3','responsecurves=TRUE','writebackgroundpredictions=TRUE'))
+mx_exotic_model_all_occs <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+                                   args=c('betamultiplier=3','responsecurves=TRUE',
+                                          'writebackgroundpredictions=TRUE'))
+
 mx_exotic_model_all_occs@results
 mx_exotic_model_all_occs@lambdas
 response(mx_exotic_model_all_occs)
 plot(mx_exotic_model_all_occs)
 mx_exotic_model_all_occs@results
 
-px_exotic_model <- predict(predictors_three_native_one_novel, mx_exotic_model_all_occs) #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
-writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+# writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
 # 10% Min. Training Pres Threshold
 training_suitability_exotic_model <- extract(px_exotic_model, thin_ptw2_coords) #all predicted values, all occs
@@ -689,14 +704,6 @@ pred_binary_background_exotic <- background_suitability_exotic > .2158
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
 length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
 
-# Highest suitability
-map_exotics_all_occs <- rasterToPoints(px_exotic_model) #make predictions raster a set of points for ggplot
-df_exotics_all_occs <- data.frame(map_exotics_all_occs) #convert to data.frame
-colnames(df_exotics_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
-plot(wrld_simpl)
-max(df_exotics_all_occs$Suitability)
-plot(wrld_simpl)
-points(filter(df_exotics_all_occs, Suitability >= .84), col="red")
 
 ####################################################################################################
 ######################################### Heat Map #################################################
@@ -709,16 +716,12 @@ df_no_host_pres <- df_no_host_pres[,c(1,2,4)] #get only binary output
 df_exotic_host_pres <- df_exotics_all_occs %>% mutate(pres_two_native_one_novel_host = ifelse(Suitability >= 0.2158, 1, 0))
 df_exotic_host_pres <- df_exotic_host_pres[,c(1,2,4)] #get only binary output
 
-df_full_host_pres <- df_full_hosts_all_occs %>% mutate(pres_all_host = ifelse(Suitability >= 0.1720696, 1, 0))
-df_full_host_pres <- df_full_host_pres[,c(1,2,4)]
-
 df_all_presence_a1 <- left_join(df_no_host_pres, df_exotic_host_pres, by = c("lon", "lat"))
-df_all_presence_a2 <- left_join(df_all_presence_a1, df_full_host_pres, by = c("lon", "lat"))
-head(df_all_presence_a2)
-df_all_presence_a2$total <- rowSums(df_all_presence_a2[, c(4, 6, 8)])
+head(df_all_presence_a1)
+df_all_presence_a1$total <- rowSums(df_all_presence_a2[, c(4, 6)])
 
 # Converting Heatmap to geotiff
-df_all_presences_combined<-df_all_presence_a2[,c(1,2,9)]
+df_all_presences_combined<-df_all_presence_a1[,c(1,2,9)]
 head(df_all_presences_combined)
 coordinates(df_all_presences_combined) <- ~ lon + lat
 gridded(df_all_presences_combined) <- TRUE
@@ -726,7 +729,6 @@ raster_of_heatmap <- raster(df_all_presences_combined)
 writeRaster(raster_of_heatmap, filename="heatmap_whydah.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for No Hosts
-
 coordinates(df_no_host_pres) <- ~ lon + lat
 gridded(df_no_host_pres) <- TRUE
 raster_no_host <- raster(df_no_host_pres)
@@ -738,17 +740,9 @@ gridded(df_exotic_host_pres) <- TRUE
 raster_exotic_host <- raster(df_exotic_host_pres)
 writeRaster(raster_exotic_host, filename="exotic_host_raster.tif", format="GTiff", overwrite=TRUE)
 
-# Binary map for full host
-coordinates(df_full_host_pres) <- ~ lon + lat
-gridded(df_full_host_pres) <- TRUE
-raster_full_host <- raster(df_full_host_pres)
-plot(raster_full_host)
-writeRaster(raster_full_host, filename="full_host_raster.tif", format="GTiff", overwrite=TRUE)
-
 ####################################################################################################
 ########################### Predicted Occupied Area for North America ##############################
 ####################################################################################################
-
 
 # Make object for extent of North America
 north_america_extent <-c(-162,-60,11.5,65)
@@ -761,42 +755,31 @@ sum(na.omit(no_host_north_america_binary@data@values))
 exotic_host_north_america_binary <- crop(raster_exotic_host, north_america_extent)
 sum(na.omit(exotic_host_north_america_binary@data@values))
 
-# FUll Host Raster of NA
-full_host_north_america_binary <- crop(raster_full_host, north_america_extent)
-plot(full_host_north_america_binary)
-sum(na.omit(full_host_north_america_binary@data@values))
-
 ####################################################################################################
 #################################### Calculating Schoner's D #######################################
 ####################################################################################################
 
-
 naive_asc <- writeRaster(px_no_host_all_occs, filename = 'naive_model.asc', format = "ascii", overwrite = TRUE)
 exotic_asc <- writeRaster(px_exotic_model, filename = "exotics_model.asc", format = "ascii", overwrite = TRUE)
-full_asc <- writeRaster(px_full_hosts_all_occs, filename = "full_model.asc", format = "ascii", overwrite = TRUE)
 
 naive_asc <- read.asc("naive_model.asc")
 exotic_asc <- read.asc("exotics_model.asc")
-full_asc <- read.asc("full_model.asc")
 
 naive_grid <- sp.from.asc(naive_asc)
 exotic_grid <- sp.from.asc(exotic_asc)
-full_grid <- sp.from.asc(full_asc)
 
-no <- niche.overlap(list(naive = naive_grid, exotic.host = exotic_grid, full.host = full_grid))
+no <- niche.overlap(list(naive = naive_grid, exotic.host = exotic_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
 
 ####################################################################################################
 ################################# Experimenting with MESS Maps #####################################
 ####################################################################################################
 
-
-reference_points <- extract(predictors_all_hosts, thin_ptw2_coords)
+reference_points <- extract(predictors, thin_ptw2_coords)
 reference_points
-mss <- mess(x = predictors_all_hosts, v = reference_points, full = TRUE)
+mss <- mess(x = predictors, v = reference_points, full = TRUE)
 plot(predictors_all_hosts[[20]])
 plot(mss)
-?mess
 
 # Calculate number of parameters in each model
 
