@@ -634,14 +634,10 @@ px_no_host_all_occs <- predict(predictors, mx_no_host_all_occs, progress='window
 plot(px_no_host_all_occs, main= 'Maxent, raw values')
 # writeRaster(px_no_host_all_occs, filename="naive_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
-# Making MESS map
+# Making MESS map -- process failed when i tried to run
 reference_points <- extract(predictors, thin_ptw2_coords)
 mss <- mess(x=predictors, v=reference_points, full=TRUE)
 plot(mss)
-
-# 10% Min. Training Pres Threshold
-ten_thresh_exotic_model <- quantile(training_suitability_exotic_model, 0.1, na.rm = TRUE)
-ten_thresh_exotic_model
 
 # Forming Confusion Matrix
 training_suitability_naive <- extract(px_no_host_all_occs, thin_ptw2_coords) # extract predicted values, at known presence points
@@ -694,34 +690,43 @@ ten_thresh_exotic_model
 # Confusion Matrix
 training_suitability_exotic <- extract(px_exotic_model, thin_ptw2_coords) # extract predicted values, at known presence points
 training_suitability_exotic <- na.omit(training_suitability_exotic)
-pred_binary_exotic <- training_suitability_exotic > .2158 #where are known presence greater than threshold?
+pred_binary_exotic <- training_suitability_exotic > 0.1913834 #where are known presence greater than threshold?
 length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
 length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
 
 background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
-pred_binary_background_exotic <- background_suitability_exotic > .2158
+pred_binary_background_exotic <- background_suitability_exotic > 0.1913834
 
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
 length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
-
 
 ####################################################################################################
 ######################################### Heat Map #################################################
 ####################################################################################################
 
+# Prepare predictions as data.frames
+map_no_host_all_occs <- rasterToPoints(px_no_host_all_occs) #make predictions raster a set of points for ggplot
+df_no_host_all_occs <- data.frame(map_no_host_all_occs) #convert to data.frame
+colnames(df_no_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
-df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2497, 1, 0))
+map_exotic_host_all_occs <- rasterToPoints(px_exotic_model) #make predictions raster a set of points for ggplot
+df_exotic_host_all_occs <- data.frame(map_exotic_host_all_occs) #convert to data.frame
+colnames(df_exotic_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+
+df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2540, 1, 0))
 df_no_host_pres <- df_no_host_pres[,c(1,2,4)] #get only binary output
 
-df_exotic_host_pres <- df_exotics_all_occs %>% mutate(pres_two_native_one_novel_host = ifelse(Suitability >= 0.2158, 1, 0))
+df_exotic_host_pres <- df_exotic_host_all_occs %>% mutate(pres_exotic_host = ifelse(Suitability >= 0.1914, 1, 0))
+head(df_exotic_host_pres)
 df_exotic_host_pres <- df_exotic_host_pres[,c(1,2,4)] #get only binary output
 
 df_all_presence_a1 <- left_join(df_no_host_pres, df_exotic_host_pres, by = c("lon", "lat"))
 head(df_all_presence_a1)
-df_all_presence_a1$total <- rowSums(df_all_presence_a2[, c(4, 6)])
+df_all_presence_a1$total <- rowSums(df_all_presence_a1[, c(3, 5)])
 
 # Converting Heatmap to geotiff
-df_all_presences_combined<-df_all_presence_a1[,c(1,2,9)]
+head(df_all_presence_a1)
+df_all_presences_combined<-df_all_presence_a1[,c(1,2,6)]
 head(df_all_presences_combined)
 coordinates(df_all_presences_combined) <- ~ lon + lat
 gridded(df_all_presences_combined) <- TRUE
@@ -746,14 +751,38 @@ writeRaster(raster_exotic_host, filename="exotic_host_raster.tif", format="GTiff
 
 # Make object for extent of North America
 north_america_extent <-c(-162,-60,11.5,65)
+setwd('/Users/rpecchia/Desktop/Whydah Project/whydah/Data')
+
+antilles <- readOGR(dsn = ".", layer = "north_america_antilles_shapefile")
+plot(antilles)
+usa <- readOGR(dsn = ".", layer = "north_america_shapefile")
+plot(usa)
+
+antilles@polygons
+usa@polygons
+
+CNTY_ID <- "30"
+length(CNTY_ID)
+length
+row.names(as(usa, "data.frame"))
+row.names(as(antilles, "data.frame"))
+usa2 <- spChFIDs(usa, as.character(30))
+
+usa_and_antilles <- spRbind(usa2,antilles)
 
 # No Host Raster of NA
 no_host_north_america_binary <- crop(raster_no_host, north_america_extent)
-sum(na.omit(no_host_north_america_binary@data@values))
+plot(no_host_north_america_binary)
+no_host_usa_antilles_binary <- mask(no_host_north_america_binary, usa_and_antilles)
+plot(no_host_usa_antilles_binary)
+sum(na.omit(no_host_usa_antilles_binary@data@values))
 
 # Exotic Host Raster of NA
 exotic_host_north_america_binary <- crop(raster_exotic_host, north_america_extent)
-sum(na.omit(exotic_host_north_america_binary@data@values))
+plot(exotic_host_north_america_binary)
+exotic_host_usa_antilles_binary <- mask(exotic_host_north_america_binary, usa_and_antilles)
+plot(exotic_host_usa_antilles_binary)
+sum(na.omit(exotic_host_usa_antilles_binary@data@values))
 
 ####################################################################################################
 #################################### Calculating Schoner's D #######################################
