@@ -96,6 +96,9 @@ plot(wrld_simpl)
 points(ptw.unique, cex = .2, col = "red")
 # write.csv(ptw.unique, file = "ptw.unique.csv")
 
+####################################################################################################
+#######################################   Grasses Layer    #########################################
+####################################################################################################
 # Test Grasses points
 # grasses <- gbif('Echinochloa', '*', geo=T, removeZeros = T)
 # save(grasses, file="grasses.rdata")
@@ -111,7 +114,10 @@ grasses.unique<- distinct(select(grasses_subset,lon,lat,country,species)) #remov
 dim(grasses.unique)
 head(grasses.unique)
 plot(wrld_simpl)
-points(grasses.unique)
+points(grasses.unique, cex = .2, col = "red")
+
+
+
 
 # Removing outliers
 unique(ptw.unique$country) #Remove Taiwan Whydahs
@@ -172,7 +178,12 @@ write.csv(ptw_unique_no_florida, file = "ptw.unique.no.florida.qgis.csv")
 write.csv(ptw_unique_with_florida, file = "ptw.unique.with.florida.qgis.csv")
 # ptw.unique<-read.csv("whydah_for_editing.csv")
 
-# spThin ####
+####################################################################################################
+#################################################   spThin    ######################################
+#####################################################################################################
+
+#### PTW no florida
+
 setwd("~/Desktop/Whydah Project/whydah/Data")
 # set coordinate system
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
@@ -181,7 +192,7 @@ thin1 <-spThin(
   ptw_unique_no_florida, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi", #can change to "gurobi" to make it even faster, but have to install it first
   great.circle.distance=TRUE)
 summary(thin1)
@@ -201,6 +212,35 @@ head(thin_ptw2)
 thin_ptw2_coords<-thin_ptw2[,1:2]
 write.csv(thin_ptw2_coords, file = "ptw.thinned.for.figure1.csv")
 
+
+### PTW with Florida
+setwd("~/Desktop/Whydah Project/whydah/Data")
+# set coordinate system
+crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
+# then thin
+thin_ptw_with_florida <-spThin(
+  ptw_unique_with_florida, 
+  x.col = "lon",
+  y.col = "lat",
+  dist = 3000,
+  method= "gurobi", #can change to "gurobi" to make it even faster, but have to install it first
+  great.circle.distance=TRUE)
+summary(thin_ptw_with_florida)
+
+# Saving the thinned file ####
+# print temporary dir
+print(tempdir())
+write.SpThin(
+  thin_ptw_with_florida,
+  coords=FALSE,
+  dir=tempdir()
+)
+
+# Read in .csv of all thinned points
+thin_ptw_with_florida_2<-read.csv("thin_0001.csv", head=T)
+head(thin_ptw_with_florida_2)
+thin_ptw_with_florida_coords<-thin_ptw_with_florida_2[,1:2]
+write.csv(thin_ptw_with_florida_coords, file = "ptw.thinned.with.floridafor.figure1.csv")
 
 ####################################################################################################
 ################################   Orange-cheeked Occurrences   ####################################
@@ -283,7 +323,7 @@ thin_ocw <-spThin(
   ocw.unique, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_ocw)
@@ -347,7 +387,7 @@ thin_cw <-spThin(
   cw.unique, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_cw)
@@ -390,7 +430,7 @@ thin_bronze <-spThin(
   bronze.unique, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_bronze)
@@ -466,7 +506,7 @@ thin_nutmeg <-spThin(
   nutmeg.unique, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_nutmeg)
@@ -530,7 +570,7 @@ thin_black_rumped_waxbill <-spThin(
   black_rumped_waxbill.unique, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_black_rumped_waxbill)
@@ -581,7 +621,7 @@ thin_silverbill <-spThin(
   silverbill.unique, 
   x.col = "lon",
   y.col = "lat",
-  dist = 10000,
+  dist = 3000,
   method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_silverbill)
@@ -599,6 +639,35 @@ write.SpThin(
 # Read .csv of thinned points
 thin_silverbill2<-read.csv("thin_0001.csv", head=T)
 head(thin_silverbill2) #Always check to make sure this shows correct species
+
+####################################################################################################
+################################   Thinning Grasses   ######################################
+####################################################################################################
+
+thin_grasses <-spThin(
+  grasses.unique, 
+  x.col = "lon",
+  y.col = "lat",
+  dist = 3000,
+  method= "gurobi",
+  great.circle.distance=TRUE)
+summary(thin_grasses)
+str(thin_grasses)
+plot(thin_grasses)
+
+# Save thinned file
+print(tempdir())
+write.SpThin(
+  thin_ocw,
+  coords=FALSE,
+  dir=tempdir()
+)
+
+# Read in .csv of thinned points
+thin_ocw2<-read.csv("thin_0001.csv", head=T)
+head(thin_ocw2) #Always check to make sure this shows correct species
+
+
 
 ####################################################################################################
 ################################   Presence/Absence Rasters   ######################################
@@ -679,7 +748,6 @@ climate<-stack(files)
 names(climate)
 climate_and_hosts <- stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
 names(climate_and_hosts)
-
 
 
 ####################################################################################################
