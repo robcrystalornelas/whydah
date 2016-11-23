@@ -25,9 +25,6 @@ library(scales)
 library(plyr)
 library(phyloclim)
 library(SDMTools)
-install.packages("spocc")
-library(rebird)
-library(spocc)
 data("wrld_simpl")
 set.seed(1) #makes sure we're generating the same random numbers
 

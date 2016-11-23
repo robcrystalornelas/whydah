@@ -8,11 +8,12 @@ head(thin_ptw_with_florida_coords)
 ######################################### MaxEnt for Climate #######################################
 ####################################################################################################
 # K-fold
+names(climate)
 mx_no_host_k_fold_florida <- maxent(climate, thin_ptw_with_florida_coords, a=backg_five_degree, 
                             args=c('responsecurves=TRUE', 
                                    'replicatetype=crossvalidate', 'replicates=5',
                                    'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_no_host_k_fold@results
+mx_no_host_k_fold_florida@results
 
 # Full occurrence set
 mx_no_host_full <- maxent(predictors, thin_ptw_with_florida_coords, a=backg_five_degree, 
@@ -98,7 +99,7 @@ mx_climate_and_grasses_florida <- maxent(climate_and_grasses_occurrences, thin_p
                                         'replicatetype=crossvalidate', 'replicates=5',
                                         'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_climate_and_grasses@results
+mx_climate_and_grasses_florida@results
 names(mx_climate_and_grasses)
 
 # all occurrences
@@ -189,12 +190,11 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-names(climate_and_hosts_and_grasses_occurrences)
-mx_climate_hostS_grasses_Florida <- maxent(climate_and_hosts_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_five_degree, 
+mx_climate_hosts_grasses_Florida <- maxent(climate_and_hosts_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_five_degree, 
                                    args=c('responsecurves=TRUE', 
                                           'replicatetype=crossvalidate', 'replicates=5',
                                           'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_hostS_grasses@results
+mx_climate_hosts_grasses_Florida@results
 names(climate_and_hosts_and_grasses_occurrences)
 
 # all occurrences
@@ -236,7 +236,6 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-names(climate_and_hosts_and_LULC)
 mx_climate_hosts_LULC_florida <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_five_degree, factors = "band1", 
                                 args=c('responsecurves=TRUE', 
                                        'replicatetype=crossvalidate', 'replicates=5',
@@ -284,13 +283,12 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-names(hosts)
-mx_hosts <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
+mx_hosts_florida <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
                    args=c('responsecurves=TRUE', 
                           'replicatetype=crossvalidate', 'replicates=5',
                           'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_hosts@results
+mx_hosts_florida@results
 names(hosts)
 
 # all occurrences
