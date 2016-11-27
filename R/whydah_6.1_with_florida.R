@@ -1,22 +1,34 @@
 ####################################################################################################
 ############################ Whyda Models Using Florida Points #####################################
 ####################################################################################################
+setwd("~/Desktop/Whydah Project/whydah/Data")
 
 head(thin_ptw_with_florida_coords)
+
+#now read in the file w/ buffers from QGIS
+buffered_region_florida <- readGDAL("ptw_with_florida_buffers_2_cropped.tif")
+
+#convert buffered region to raster
+buffer_florida_raster <- raster(buffered_region_florida) #convert africa map to raster
+backg_with_florida <- randomPoints(buffer_florida_raster, n=10000)
+
+plot(wrld_simpl)
+points(backg_with_florida, col = "purple", cex = 0.2)
+plot(wrld_simpl)
+points(backg_five_degree, col = "green", cex = 0.2)
 
 ####################################################################################################
 ######################################### MaxEnt for Climate #######################################
 ####################################################################################################
-# K-fold
-names(climate)
-mx_no_host_k_fold_florida <- maxent(climate, thin_ptw_with_florida_coords, a=backg_five_degree, 
-                            args=c('responsecurves=TRUE', 
-                                   'replicatetype=crossvalidate', 'replicates=5',
-                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_no_host_k_fold_florida@results
+
+mx_climate_k_fold_florida <- maxent(climate, thin_ptw_with_florida_coords, a=backg_with_florida, 
+                                    args=c('responsecurves=TRUE', 
+                                           'replicatetype=crossvalidate', 'replicates=5',
+                                           'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_k_fold_florida@results
 
 # Full occurrence set
-mx_no_host_full <- maxent(predictors, thin_ptw_with_florida_coords, a=backg_five_degree, 
+mx_climate_full <- maxent(climate, thin_ptw_with_florida_coords, a=backg_with_florida, 
                           args=c('responsecurves=TRUE',
                                  'writebackgroundpredictions=TRUE'))
 
@@ -25,7 +37,7 @@ plot(mx_no_host_full)
 mx_no_host_full@results
 mx_no_host_full@lambdas
 
-px_no_host_full <- predict(predictors, mx_no_host_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
+px_no_host_full <- predict(climate, mx_no_host_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_no_host_full, main= 'Maxent, raw values')
 
 # Forming Confusion Matrix
@@ -38,7 +50,7 @@ pred_binary_naive <- training_suitability_naive > 0.2417432 #where are known pre
 length(pred_binary_naive[pred_binary_naive==TRUE]) # these are "a" the true positives
 length(pred_binary_naive[pred_binary_naive==FALSE]) #these are "c" the false negatives
 
-background_suitability_naive <- extract(px_no_host_all_occs, backg_five_degree)
+background_suitability_naive <- extract(px_no_host_all_occs, backg_with_florida)
 pred_binary_background_naive <- background_suitability_naive > 0.2417432
 
 length(pred_binary_background_naive[pred_binary_background_naive==TRUE]) #these are "b" the false pos
@@ -48,15 +60,17 @@ length(pred_binary_background_naive[pred_binary_background_naive==FALSE]) # thes
 ################################### MaxEnt for Climate & Hosts ########################################
 ####################################################################################################
 
+plot(wrld_simpl)
+
 # k-fold
-mx_climate_and_hosts_model_florida <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
-                                     args=c('responsecurves=TRUE', 
-                                            'replicatetype=crossvalidate', 'replicates=5',
-                                            'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_and_hosts_model_florida <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
+                                             args=c('responsecurves=TRUE', 
+                                                    'replicatetype=crossvalidate', 'replicates=5',
+                                                    'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 mx_climate_and_hosts_model_florida@results
 
 # all occurrences
-mx_climate_and_hosts_model_all_occs <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
+mx_climate_and_hosts_model_all_occs <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                               args=c('responsecurves=TRUE',
                                                      'writebackgroundpredictions=TRUE'))
 
@@ -83,7 +97,7 @@ pred_binary_climate_and_hosts <- training_suitability_climate_and_hosts > 0.2021
 length(pred_binary_climate_and_hosts[pred_binary_climate_and_hosts==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_and_hosts[pred_binary_climate_and_hosts==FALSE]) #these are "c" the false negatives
 
-background_suitability_climate_and_hosts <- extract(px_climate_and_hosts_model, backg_five_degree)
+background_suitability_climate_and_hosts <- extract(px_climate_and_hosts_model, backg_with_florida)
 pred_binary_background_climate_and_hosts <- background_suitability_climate_and_hosts > 0.2021041
 
 length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_and_hosts==TRUE]) #these are "b" the false pos
@@ -94,18 +108,18 @@ length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_a
 ####################################################################################################
 
 # k-fold
-mx_climate_and_grasses_florida <- maxent(climate_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_five_degree, 
-                                 args=c('responsecurves=TRUE', 
-                                        'replicatetype=crossvalidate', 'replicates=5',
-                                        'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_and_grasses_florida <- maxent(climate_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_with_florida, 
+                                         args=c('responsecurves=TRUE', 
+                                                'replicatetype=crossvalidate', 'replicates=5',
+                                                'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
 mx_climate_and_grasses_florida@results
-names(mx_climate_and_grasses)
+names(mx_climate_and_grasses_florida)
 
 # all occurrences
-mx_climate_and_grasses_full_occurrences <- maxent(climate_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_five_degree, 
-                                                  args=c('responsecurves=TRUE',
-                                                         'writebackgroundpredictions=TRUE'))
+mx_climate_and_grasses_full_occurrences_florida <- maxent(climate_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_with_florida, 
+                                                          args=c('responsecurves=TRUE',
+                                                                 'writebackgroundpredictions=TRUE'))
 
 response(mx_climate_and_grasses_full_occurrences)
 plot(mx_climate_and_grasses_full_occurrences)
@@ -129,7 +143,7 @@ pred_binary_climate_and_grasses <- training_suitability_climate_and_grasses > 0.
 length(pred_binary_climate_and_grasses[pred_binary_climate_and_grasses==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_and_grasses[pred_binary_climate_and_grasses==FALSE]) #these are "c" the false negatives
 
-background_suitability_climate_and_grasses <- extract(px_climate_and_grasses_model, backg_five_degree)
+background_suitability_climate_and_grasses <- extract(px_climate_and_grasses_model, backg_with_florida)
 pred_binary_background_climate_and_grasses <- background_suitability_climate_and_grasses > 0.2021041
 
 length(pred_binary_background_climate_and_grasses[pred_binary_background_climate_and_grasses==TRUE]) #these are "b" the false pos
@@ -142,16 +156,16 @@ length(pred_binary_background_climate_and_grasses[pred_binary_background_climate
 
 # k-fold
 names(climate_and_LULC)
-mx_climate_and_LULC_model_Florida <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_five_degree, factors = "band1", 
-                                    args=c('responsecurves=TRUE', 
-                                           'replicatetype=crossvalidate', 'replicates=5',
-                                           'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_and_LULC_model_Florida <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
+                                            args=c('responsecurves=TRUE', 
+                                                   'replicatetype=crossvalidate', 'replicates=5',
+                                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_climate_and_LULC_model_Florida@results
+mx_climate_and_LULC_model@results
 names(climate_and_LULC)
 
 # all occurrences
-mx_climate_and_LULC_model_full_occurrences <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_five_degree, factors = "band1",
+mx_climate_and_LULC_model_full_occurrences <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
                                                      args=c('responsecurves=TRUE',
                                                             'writebackgroundpredictions=TRUE'))
 
@@ -178,7 +192,7 @@ pred_binary_exotic <- training_suitability_exotic > 0.2021041 #where are known p
 length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
 length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
 
-background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+background_suitability_exotic <- extract(px_exotic_model, backg_with_florida)
 pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
 
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
@@ -190,15 +204,16 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-mx_climate_hosts_grasses_Florida <- maxent(climate_and_hosts_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_five_degree, 
-                                   args=c('responsecurves=TRUE', 
-                                          'replicatetype=crossvalidate', 'replicates=5',
-                                          'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_hosts_grasses_Florida@results
+names(climate_and_hosts_and_grasses_occurrences)
+mx_climate_hostS_grasses_florida <- maxent(climate_and_hosts_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_with_florida, 
+                                           args=c('responsecurves=TRUE', 
+                                                  'replicatetype=crossvalidate', 'replicates=5',
+                                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_hostS_grasses@results
 names(climate_and_hosts_and_grasses_occurrences)
 
 # all occurrences
-mx_climate_hosts_and_grasses <- maxent(predictors_and_exotic_hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
+mx_climate_hosts_and_grasses <- maxent(predictors_and_exotic_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                        args=c('responsecurves=TRUE',
                                               'writebackgroundpredictions=TRUE'))
 
@@ -225,7 +240,7 @@ pred_binary_exotic <- training_suitability_exotic > 0.2021041 #where are known p
 length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
 length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
 
-background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+background_suitability_exotic <- extract(px_exotic_model, backg_with_florida)
 pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
 
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
@@ -236,15 +251,16 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-mx_climate_hosts_LULC_florida <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_five_degree, factors = "band1", 
-                                args=c('responsecurves=TRUE', 
-                                       'replicatetype=crossvalidate', 'replicates=5',
-                                       'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_hosts_LULC_florida@results
-names(mx_climate_hosts_LULC_florida)
+names(climate_and_hosts_and_LULC)
+mx_climate_hosts_LULC_florida <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
+                                        args=c('responsecurves=TRUE', 
+                                               'replicatetype=crossvalidate', 'replicates=5',
+                                               'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_hosts_LULC@results
+names(climate_and_hosts_and_LULC)
 
 # all occurrences
-mx_climate_hosts_LULC_full_occs_florida <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_five_degree, factors = "band1",
+mx_climate_hosts_LULC_full_occs <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
                                           args=c('responsecurves=TRUE',
                                                  'writebackgroundpredictions=TRUE'))
 
@@ -271,7 +287,7 @@ pred_binary_exotic <- training_suitability_exotic > 0.2021041 #where are known p
 length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
 length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
 
-background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+background_suitability_exotic <- extract(px_exotic_model, backg_with_florida)
 pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
 
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
@@ -283,16 +299,17 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-mx_hosts_florida <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
+names(hosts)
+mx_hosts <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                    args=c('responsecurves=TRUE', 
                           'replicatetype=crossvalidate', 'replicates=5',
                           'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_hosts_florida@results
+mx_hosts@results
 names(hosts)
 
 # all occurrences
-mx_hosts_model_full_occurrences <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_five_degree, 
+mx_hosts_model_full_occurrences <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                           args=c('responsecurves=TRUE',
                                                  'writebackgroundpredictions=TRUE'))
 
@@ -319,7 +336,7 @@ pred_binary_exotic <- training_suitability_exotic > 0.2021041 #where are known p
 length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
 length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
 
-background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+background_suitability_exotic <- extract(px_exotic_model, backg_with_florida)
 pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
 
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos

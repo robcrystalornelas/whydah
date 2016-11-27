@@ -61,11 +61,11 @@ head(ptw_south_africa_2)
 table(ptw_south_africa_2$collectionCode)
 
 remove_transects_rows <- which(ptw_south_africa_2$collectionCode == "EBIRD" | 
-        ptw_south_africa_2$collectionCode == "EBIRD_AU" | 
-        ptw_south_africa_2$collectionCode == "EBIRD_CAN" | 
-        ptw_south_africa_2$collectionCode == "naturgucker" | 
-        ptw_south_africa_2$collectionCode == "Observations" | 
-        ptw_south_africa_2$collectionCode == "SAFRING")
+                                 ptw_south_africa_2$collectionCode == "EBIRD_AU" | 
+                                 ptw_south_africa_2$collectionCode == "EBIRD_CAN" | 
+                                 ptw_south_africa_2$collectionCode == "naturgucker" | 
+                                 ptw_south_africa_2$collectionCode == "Observations" | 
+                                 ptw_south_africa_2$collectionCode == "SAFRING")
 remove_transects_rows
 
 south_africa_no_transects <- ptw_south_africa_2[remove_transects_rows, ] 
@@ -646,7 +646,7 @@ thin_grasses <-spThin(
   x.col = "lon",
   y.col = "lat",
   dist = 3000,
-  method= "gurobi",
+  method= "lpsolve",
   great.circle.distance=TRUE)
 summary(thin_grasses)
 str(thin_grasses)
@@ -655,7 +655,7 @@ plot(thin_grasses)
 # Save thinned file
 print(tempdir())
 write.SpThin(
-  thin_ocw,
+  thin_grasses,
   coords=FALSE,
   dir=tempdir()
 )
@@ -746,6 +746,10 @@ names(climate)
 climate_and_hosts <- stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
 names(climate_and_hosts)
 
+climate_and_LULC
+
+climate
+
 
 ####################################################################################################
 ########################### Background points from five degree buffer ##############################
@@ -779,8 +783,8 @@ mx_no_host_k_fold@results
 
 # Full occurrence set
 mx_no_host_full <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, 
-                              args=c('responsecurves=TRUE',
-                                     'writebackgroundpredictions=TRUE'))
+                          args=c('responsecurves=TRUE',
+                                 'writebackgroundpredictions=TRUE'))
 
 # response(mx_no_host_all_occs)
 plot(mx_no_host_full)
