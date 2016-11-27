@@ -126,7 +126,6 @@ ptw.unique<-filter(ptw.unique, country !=c("Dominican Republic"))
 ptw.unique<-filter(ptw.unique, country !=c("Portugal"))
 
 # Can use this code to check number of records in a particular country
-data("wrld_simpl")
 plot(wrld_simpl)
 points(ptw.unique, cex = .2, col = "red")
 
@@ -641,12 +640,14 @@ head(thin_silverbill2) #Always check to make sure this shows correct species
 ################################   Thinning Grasses   ######################################
 ####################################################################################################
 
+grasses.subset <- grasses.unique[sample(nrow(grasses.unique), 10000), ] # Randomly select 10,000 rows so that spthin doesn't crash
+
 thin_grasses <-spThin(
-  grasses.unique, 
+  grasses.subset, 
   x.col = "lon",
   y.col = "lat",
   dist = 3000,
-  method= "lpsolve",
+  method= "gurobi",
   great.circle.distance=TRUE)
 summary(thin_grasses)
 str(thin_grasses)
@@ -661,8 +662,8 @@ write.SpThin(
 )
 
 # Read in .csv of thinned points
-thin_ocw2<-read.csv("thin_0001.csv", head=T)
-head(thin_ocw2) #Always check to make sure this shows correct species
+thin_grasses <- read.csv("thin_0001.csv", head=T)
+head(thin_grasses) #Always check to make sure this shows correct species
 
 
 
@@ -732,24 +733,46 @@ myRaster <- raster( "bio1.bil") #resolution of 5 second is .08333x.08333, or 10k
 pa_raster_silverbill <- presence.absence.raster(mask.raster=myRaster, species.data=thin_silverbill2, raster.label=species)
 pa_raster_silverbill
 
+species <- "Grasses"
+thin_grasses2 <- thin_grasses[,1:2] #prepare only lat/lon data for pres/absence
+myRaster <- raster( "bio1.bil") #resolution of 5 second is .08333x.08333, or 10km grid cells. resolution of 2 second is .04166 x .04166
+pa_raster_grasses <- presence.absence.raster(mask.raster=myRaster, species.data=thin_grasses2, raster.label=species)
+pa_raster_grasses
+
 ####################################################################################################
 ################################   Preparing Predictor Variables ###################################
 ####################################################################################################
+
+setwd("~/Desktop/Whydah Project/whydah/Data")
+
+#LULC Layer
+LULC_layer <- readGDAL("LULC_Resampled.tif")
+LULC_raster <- raster(LULC_layer)
+plot(LULC_raster)
 
 # get the file names...these should be all of our our worldclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
 files
 
 # stack predictors
-climate<-stack(files)
+climate <- stack(files)
 names(climate)
+
 climate_and_hosts <- stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
 names(climate_and_hosts)
 
-climate_and_LULC
+climate_and_LULC <- stack(files, LULC_raster)
+names(climate_and_LULC)
 
-climate
+climate_and_grasses_occs <- stack(climate, pa_raster_grasses)
 
+climate_and_hosts_and_grasses_occs <- stack(climate_and_hosts, pa_raster_grasses)
+names(climate_and_hosts_and_grasses_occs)
+
+climate_and_hosts_and_LULC <- stack(climate_and_hosts, LULC_raster)
+names(climate_and_hosts_and_LULC)
+
+hosts <- stack(pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
 
 ####################################################################################################
 ########################### Background points from five degree buffer ##############################
@@ -774,24 +797,24 @@ points(backg_five_degree, col = "red", cex = 0.2)
 ####################################################################################################
 ######################################### MaxEnt for Climate #######################################
 ####################################################################################################
+
 # K-fold
-mx_no_host_k_fold <- maxent(climate, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_k_fold <- maxent(climate, thin_ptw2_coords, a=backg_five_degree, 
                             args=c('responsecurves=TRUE', 
                                    'replicatetype=crossvalidate', 'replicates=5',
                                    'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_no_host_k_fold@results
+mx_climate_k_fold@results
 
 # Full occurrence set
-mx_no_host_full <- maxent(predictors, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_full <- maxent(climate, thin_ptw2_coords, a=backg_five_degree, 
                           args=c('responsecurves=TRUE',
                                  'writebackgroundpredictions=TRUE'))
 
 # response(mx_no_host_all_occs)
-plot(mx_no_host_full)
-mx_no_host_full@results
-mx_no_host_full@lambdas
+plot(mx_climate_full)
+mx_climate_full@results
 
-px_no_host_full <- predict(predictors, mx_no_host_full, progress='window') #make predictions of habitat suitability can include argument ext=ext
+px_climate_full <- predict(climate, mx_climate_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_no_host_full, main= 'Maxent, raw values')
 
 # Forming Confusion Matrix
@@ -832,7 +855,7 @@ plot(mx_exotic_model_all_occs)
 mx_exotic_model_all_occs@results
 mx_exotic_model_all_occs@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -877,7 +900,7 @@ plot(mx_exotic_model_all_occs)
 mx_exotic_model_all_occs@results
 mx_exotic_model_all_occs@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -906,7 +929,7 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, factors = "band1",
                           args=c('responsecurves=TRUE', 
                                  'replicatetype=crossvalidate', 'replicates=5',
                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
@@ -923,7 +946,7 @@ plot(mx_exotic_model_all_occs)
 mx_exotic_model_all_occs@results
 mx_exotic_model_all_occs@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -969,7 +992,7 @@ plot(mx_exotic_model_all_occs)
 mx_exotic_model_all_occs@results
 mx_exotic_model_all_occs@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -1014,7 +1037,7 @@ plot(mx_exotic_model_all_occs)
 mx_exotic_model_all_occs@results
 mx_exotic_model_all_occs@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='window') #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
