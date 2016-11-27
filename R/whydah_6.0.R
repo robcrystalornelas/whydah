@@ -641,6 +641,7 @@ head(thin_silverbill2) #Always check to make sure this shows correct species
 ####################################################################################################
 
 grasses.subset <- grasses.unique[sample(nrow(grasses.unique), 10000), ] # Randomly select 10,000 rows so that spthin doesn't crash
+write.csv(grasses.subset, "grasses_thinned.csv")
 
 thin_grasses <-spThin(
   grasses.subset, 
@@ -664,7 +665,6 @@ write.SpThin(
 # Read in .csv of thinned points
 thin_grasses <- read.csv("thin_0001.csv", head=T)
 head(thin_grasses) #Always check to make sure this shows correct species
-
 
 
 ####################################################################################################

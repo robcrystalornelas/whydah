@@ -14,31 +14,30 @@ backg_with_florida <- randomPoints(buffer_florida_raster, n=10000)
 
 plot(wrld_simpl)
 points(backg_with_florida, col = "purple", cex = 0.2)
-plot(wrld_simpl)
 points(backg_five_degree, col = "green", cex = 0.2)
 
 ####################################################################################################
 ######################################### MaxEnt for Climate #######################################
 ####################################################################################################
 
-mx_climate_k_fold_florida <- maxent(climate, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_florida <- maxent(climate, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                     args=c('responsecurves=TRUE', 
                                            'replicatetype=crossvalidate', 'replicates=5',
                                            'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_k_fold_florida@results
+mx_climate_florida@results
 
 # Full occurrence set
-mx_climate_full <- maxent(climate, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_full_florida <- maxent(climate, thin_ptw_with_florida_coords, a=backg_with_florida, 
                           args=c('responsecurves=TRUE',
                                  'writebackgroundpredictions=TRUE'))
 
 # response(mx_no_host_all_occs)
-plot(mx_no_host_full)
-mx_no_host_full@results
-mx_no_host_full@lambdas
+plot(mx_climate_full_florida)
+mx_climate_full_florida@results
+mx_climate_full_florida@lambdas
 
-px_no_host_full <- predict(climate, mx_no_host_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
-plot(px_no_host_full, main= 'Maxent, raw values')
+px_climate_full_florida <- predict(climate, mx_climate_full_florida, progress='text') #make predictions of habitat suitability can include argument ext=ext
+plot(px_climate_full_florida, main= 'Maxent, raw values')
 
 # Forming Confusion Matrix
 training_suitability_naive <-extract(px_no_host_full, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
@@ -60,27 +59,25 @@ length(pred_binary_background_naive[pred_binary_background_naive==FALSE]) # thes
 ################################### MaxEnt for Climate & Hosts ########################################
 ####################################################################################################
 
-plot(wrld_simpl)
-
 # k-fold
-mx_climate_and_hosts_model_florida <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_and_hosts_florida <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                              args=c('responsecurves=TRUE', 
                                                     'replicatetype=crossvalidate', 'replicates=5',
                                                     'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_and_hosts_model_florida@results
+mx_climate_and_hosts_florida@results
 
 # all occurrences
-mx_climate_and_hosts_model_all_occs <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_and_hosts_full_florida <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                               args=c('responsecurves=TRUE',
                                                      'writebackgroundpredictions=TRUE'))
 
 
-response(mx_climate_and_hosts_model_all_occs)
-plot(mx_climate_and_hosts_model_all_occs)
-mx_climate_and_hosts_model_all_occs@results
-mx_climate_and_hosts_model_all_occs@lambdas
+response(mx_climate_and_hosts_full_florida)
+plot(mx_climate_and_hosts_full_florida)
+mx_climate_and_hosts_full_florida@results
+mx_climate_and_hosts_full_florida@lambdas
 
-px_climate_and_hosts_model <- predict(climate_and_hosts, mx_climate_and_hosts_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
+px_climate_and_hosts_full_florida <- predict(climate_and_hosts, mx_climate_and_hosts_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_climate_and_hosts_model, main= 'Maxent, raw values')
 writeRaster(px_climate_and_hosts_model, filename="climate_and_hosts_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -104,11 +101,11 @@ length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_a
 length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_and_hosts==FALSE]) # these are "d" the true neg 
 
 ####################################################################################################
-################################### MaxEnt for Climate & Echinchla ########################################
+################################### MaxEnt for Climate & Grasses ###################################
 ####################################################################################################
 
 # k-fold
-mx_climate_and_grasses_florida <- maxent(climate_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_and_grasses_florida <- maxent(climate_and_grasses_occs, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                          args=c('responsecurves=TRUE', 
                                                 'replicatetype=crossvalidate', 'replicates=5',
                                                 'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
@@ -117,7 +114,7 @@ mx_climate_and_grasses_florida@results
 names(mx_climate_and_grasses_florida)
 
 # all occurrences
-mx_climate_and_grasses_full_occurrences_florida <- maxent(climate_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_and_grasses_full_florida <- maxent(climate_and_grasses_occs, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                                           args=c('responsecurves=TRUE',
                                                                  'writebackgroundpredictions=TRUE'))
 
@@ -155,17 +152,16 @@ length(pred_binary_background_climate_and_grasses[pred_binary_background_climate
 ####################################################################################################
 
 # k-fold
-names(climate_and_LULC)
-mx_climate_and_LULC_model_Florida <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
+mx_climate_and_LULC_model_florida <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
                                             args=c('responsecurves=TRUE', 
                                                    'replicatetype=crossvalidate', 'replicates=5',
                                                    'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_climate_and_LULC_model@results
-names(climate_and_LULC)
+mx_climate_and_LULC_model_florida@results
+
 
 # all occurrences
-mx_climate_and_LULC_model_full_occurrences <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
+mx_climate_and_LULC_model_full_florida <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
                                                      args=c('responsecurves=TRUE',
                                                             'writebackgroundpredictions=TRUE'))
 
@@ -204,16 +200,14 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-names(climate_and_hosts_and_grasses_occurrences)
-mx_climate_hostS_grasses_florida <- maxent(climate_and_hosts_and_grasses_occurrences, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_hosts_grasses_florida <- maxent(climate_and_hosts_and_grasses_occs, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                            args=c('responsecurves=TRUE', 
                                                   'replicatetype=crossvalidate', 'replicates=5',
                                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_hostS_grasses@results
-names(climate_and_hosts_and_grasses_occurrences)
+mx_climate_hosts_grasses_florida@results
 
 # all occurrences
-mx_climate_hosts_and_grasses <- maxent(predictors_and_exotic_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_climate_hosts_and_grasses_florida_full <- maxent(climate_and_hosts_and_grasses_occs, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                        args=c('responsecurves=TRUE',
                                               'writebackgroundpredictions=TRUE'))
 
@@ -251,26 +245,25 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-names(climate_and_hosts_and_LULC)
 mx_climate_hosts_LULC_florida <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
                                         args=c('responsecurves=TRUE', 
                                                'replicatetype=crossvalidate', 'replicates=5',
                                                'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_climate_hosts_LULC@results
+mx_climate_hosts_LULC_florida@results
 names(climate_and_hosts_and_LULC)
 
 # all occurrences
-mx_climate_hosts_LULC_full_occs <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
+mx_climate_hosts_LULC_florida_full_occs <- maxent(climate_and_hosts_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
                                           args=c('responsecurves=TRUE',
                                                  'writebackgroundpredictions=TRUE'))
 
 
-response(mx_climate_hosts_LULC_full_occs)
-plot(mx_climate_hosts_LULC_full_occs)
-mx_climate_hosts_LULC_full_occs@results
-mx_climate_hosts_LULC_full_occs@lambdas
+response(mx_climate_hosts_LULC_florida_full_occs)
+plot(mx_climate_hosts_LULC_florida_full_occs)
+mx_climate_hosts_LULC_florida_full_occs@results
+mx_climate_hosts_LULC_florida_full_occs@lambdas
 
-px_climate_hosts_LULC_model <- predict(climate_and_hosts_and_LULC, mx_climate_hosts_LULC_full_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
+px_climate_hosts_LULC_model <- predict(climate_and_hosts_and_LULC, mx_climate_hosts_LULC_florida_full_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_climate_hosts_LULC_model, main= 'Maxent, raw values')
 writeRaster(px_climate_hosts_LULC_model, filename="climate_hosts_LULC_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -300,16 +293,15 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 
 # k-fold
 names(hosts)
-mx_hosts <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_hosts_florida <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                    args=c('responsecurves=TRUE', 
                           'replicatetype=crossvalidate', 'replicates=5',
                           'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_hosts@results
-names(hosts)
+mx_hosts_florida@results
 
 # all occurrences
-mx_hosts_model_full_occurrences <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
+mx_hosts_model_full_florida <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                           args=c('responsecurves=TRUE',
                                                  'writebackgroundpredictions=TRUE'))
 
