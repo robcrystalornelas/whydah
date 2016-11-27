@@ -838,26 +838,26 @@ length(pred_binary_background_naive[pred_binary_background_naive==FALSE]) # thes
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(climate_and_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_and_hosts_model <- maxent(climate_and_hosts, thin_ptw2_coords, a=backg_five_degree, 
                           args=c('responsecurves=TRUE', 
                                  'replicatetype=crossvalidate', 'replicates=5',
                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_exotic_model@results
+mx_climate_and_hosts_model@results
 
 # all occurrences
-mx_exotic_model_all_occs <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_and_hosts_full <- maxent(climate_and_hosts, thin_ptw2_coords, a=backg_five_degree, 
                                    args=c('responsecurves=TRUE',
                                           'writebackgroundpredictions=TRUE'))
 
 
-response(mx_exotic_model_all_occs)
-plot(mx_exotic_model_all_occs)
-mx_exotic_model_all_occs@results
-mx_exotic_model_all_occs@lambdas
+response(mx_climate_and_hosts_full)
+plot(mx_climate_and_hosts_full)
+mx_climate_and_hosts_full@results
+mx_climate_and_hosts_full@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
-plot(px_exotic_model, main= 'Maxent, raw values')
-writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+px_climate_and_hosts <- predict(climate_and_hosts, mx_climate_and_hosts_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
+plot(px_climate_and_hosts, main= 'Maxent, raw values')
+writeRaster(px_climate_and_hosts, filename="climate_and_hosts_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
 # 10% Min. Training Pres Threshold
 training_suitability_exotic_model <- extract(px_exotic_model, thin_ptw2_coords) #all predicted values, all occs
@@ -883,26 +883,25 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_and_grasses_model <- maxent(climate_and_grasses_occs, thin_ptw2_coords, a=backg_five_degree, 
                           args=c('responsecurves=TRUE', 
                                  'replicatetype=crossvalidate', 'replicates=5',
                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_exotic_model@results
-names(predictors_and_exotic_hosts)
+mx_climate_and_grasses_model@results
+
 # all occurrences
-mx_exotic_model_all_occs <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_and_grasses_full <- maxent(climate_and_grasses_occs, thin_ptw2_coords, a=backg_five_degree, 
                                    args=c('responsecurves=TRUE',
                                           'writebackgroundpredictions=TRUE'))
 
+response(mx_climate_and_grasses_full)
+plot(mx_climate_and_grasses_full)
+mx_climate_and_grasses_full@results
+mx_climate_and_grasses_full@lambdas
 
-response(mx_exotic_model_all_occs)
-plot(mx_exotic_model_all_occs)
-mx_exotic_model_all_occs@results
-mx_exotic_model_all_occs@lambdas
-
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
-plot(px_exotic_model, main= 'Maxent, raw values')
-writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+px_climate_and_grasses <- predict(climate_and_grasses_occs, mx_climate_and_grasses_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
+plot(px_climate_and_grasses, main= 'Maxent, raw values')
+writeRaster(px_climate_and_grasses, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
 # 10% Min. Training Pres Threshold
 training_suitability_exotic_model <- extract(px_exotic_model, thin_ptw2_coords) #all predicted values, all occs
@@ -929,22 +928,22 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, factors = "band1",
+mx_climate_and_LULC_model <- maxent(climate_and_LULC, thin_ptw2_coords, a=backg_five_degree, factors = "band1",
                           args=c('responsecurves=TRUE', 
                                  'replicatetype=crossvalidate', 'replicates=5',
                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_exotic_model@results
-names(predictors_and_exotic_hosts)
+mx_climate_and_LULC_model@results
+
 # all occurrences
-mx_exotic_model_all_occs <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_and_LULC_full <- maxent(climate_and_LULC, thin_ptw2_coords, a=backg_five_degree, factors = "band1",
                                    args=c('responsecurves=TRUE',
                                           'writebackgroundpredictions=TRUE'))
 
 
-response(mx_exotic_model_all_occs)
-plot(mx_exotic_model_all_occs)
-mx_exotic_model_all_occs@results
-mx_exotic_model_all_occs@lambdas
+response(mx_climate_and_LULC_full)
+plot(mx_exomx_climate_and_LULC_fulltic_model_all_occs)
+mx_climate_and_LULC_full@results
+mx_climate_and_LULC_full@lambdas
 
 px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
@@ -971,28 +970,28 @@ length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # th
 
 
 ####################################################################################################
-################################### MaxEnt for Climate & Hosts & Veg ########################################
+########################### MaxEnt for Climate & Hosts & Grasses ###################################
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_hosts_grasses <- maxent(climate_and_hosts_and_grasses_occs, thin_ptw2_coords, a=backg_five_degree, 
                           args=c('responsecurves=TRUE', 
                                  'replicatetype=crossvalidate', 'replicates=5',
                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_exotic_model@results
-names(predictors_and_exotic_hosts)
+mx_climate_hosts_grasses@results
+
 # all occurrences
-mx_exotic_model_all_occs <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_climate_and_hosts_and_grasses_full <- maxent(climate_and_hosts_and_grasses_occs, thin_ptw2_coords, a=backg_five_degree, 
                                    args=c('responsecurves=TRUE',
                                           'writebackgroundpredictions=TRUE'))
 
 
-response(mx_exotic_model_all_occs)
-plot(mx_exotic_model_all_occs)
-mx_exotic_model_all_occs@results
-mx_exotic_model_all_occs@lambdas
+response(mx_climate_and_hosts_and_grasses_full)
+plot(mx_climate_and_hosts_and_grasses_full)
+mx_climate_and_hosts_and_grasses_full@results
+mx_climate_and_hosts_and_grasses_full@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
+px_climate_and_hosts_and_grasses_model <- predict(climate_and_hosts_and_grasses, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
@@ -1014,30 +1013,77 @@ pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
 
 length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
 length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
+
+####################################################################################################
+############################ MaxEnt for Climate & Hosts & LULC #####################################
+####################################################################################################
+
+# k-fold
+names(climate_and_hosts_and_LULC)
+mx_climate_hosts_LULC <- maxent(climate_and_hosts_and_LULC, thin_ptw2_coords, a=backg_five_degree, factors = "band1",
+                                   args=c('responsecurves=TRUE', 
+                                          'replicatetype=crossvalidate', 'replicates=5',
+                                          'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_climate_hosts_LULC@results
+
+# all occurrences
+mx_climate_and_hosts_and_LULC_full <- maxent(climate_and_hosts_and_LULC, thin_ptw2_coords, a=backg_five_degree, factors = "band1",
+                                                args=c('responsecurves=TRUE',
+                                                       'writebackgroundpredictions=TRUE'))
+
+
+response(mx_climate_and_hosts_and_LULC_full)
+plot(mx_climate_and_hosts_and_LULC_full)
+mx_climate_and_hosts_and_LULC_full@results
+mx_climate_and_hosts_and_grasses_full@lambdas
+
+px_climate_and_hosts_and_grasses_model <- predict(climate_and_hosts_and_grasses, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
+plot(px_exotic_model, main= 'Maxent, raw values')
+writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+# 10% Min. Training Pres Threshold
+training_suitability_exotic_model <- extract(px_exotic_model, thin_ptw2_coords) #all predicted values, all occs
+training_suitability_exotic_model <- na.omit(training_suitability_exotic_model)
+ten_thresh_exotic_model <- quantile(training_suitability_exotic_model, 0.1, na.rm = TRUE)
+ten_thresh_exotic_model
+
+# Confusion Matrix
+training_suitability_exotic <- extract(px_exotic_model, thin_ptw2_coords) # extract predicted values, at known presence points
+training_suitability_exotic <- na.omit(training_suitability_exotic)
+pred_binary_exotic <- training_suitability_exotic > 0.2021041 #where are known presence greater than threshold?
+length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
+length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
+
+background_suitability_exotic <- extract(px_exotic_model, backg_five_degree)
+pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
+
+length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
+length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
+
 
 ####################################################################################################
 ####################################### MaxEnt for Hosts ##########################################
 ####################################################################################################
 
 # k-fold
-mx_exotic_model <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_hosts_model <- maxent(hosts, thin_ptw2_coords, a=backg_five_degree, 
                           args=c('responsecurves=TRUE', 
                                  'replicatetype=crossvalidate', 'replicates=5',
                                  'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_exotic_model@results
-names(predictors_and_exotic_hosts)
+mx_hosts_model@results
+
 # all occurrences
-mx_exotic_model_all_occs <- maxent(predictors_and_exotic_hosts, thin_ptw2_coords, a=backg_five_degree, 
+mx_hosts_full_occs <- maxent(hosts, thin_ptw2_coords, a=backg_five_degree, 
                                    args=c('responsecurves=TRUE',
                                           'writebackgroundpredictions=TRUE'))
 
 
-response(mx_exotic_model_all_occs)
-plot(mx_exotic_model_all_occs)
-mx_exotic_model_all_occs@results
-mx_exotic_model_all_occs@lambdas
+response(mx_hosts_full_occs)
+plot(mx_hosts_full_occs)
+mx_hosts_full_occs@results
+mx_hosts_full_occs@lambdas
 
-px_exotic_model <- predict(predictors_and_exotic_hosts, mx_exotic_model_all_occs, progress='text') #make predictions of habitat suitability can include argument ext=ext
+px_exotic_model <- predict(hosts, mx_hosts_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_exotic_model, main= 'Maxent, raw values')
 writeRaster(px_exotic_model, filename="exotic_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
