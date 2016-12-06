@@ -137,9 +137,10 @@ dim(ptw.unique)
 #remove all the florida points
 ptw_unique_with_florida <- ptw.unique
 plot(wrld_simpl)
-points(ptw_unique_with_florida)
+points(ptw_unique_with_florida, cex = .2, col = "red")
 
 write.csv(ptw_unique_with_florida, file = "ptw.unique.with.florida.qgis.csv")
+
 ####################################################################################################
 #################################################   spThin    ######################################
 #####################################################################################################
@@ -234,7 +235,7 @@ ocw.unique<-ocw.unique[-hawaii_ocw_points,] #remove san fran point
 
 # Find 2nd San Fran point
 which(ocw.unique$lat == 41.96554)
-ocw.unique<-ocw.unique[-1061,] #remove san fran point
+ocw.unique<-ocw.unique[-1018,] #remove san fran point
 
 # Re-check ocw points
 plot(wrld_simpl)
@@ -281,39 +282,64 @@ setwd("~/Desktop/Whydah Project/whydah/Data") #back to data directory
 load("cw.rdata")
 head(cw)
 dim(cw)
-cw<-cw[,c('lon','lat','country','species')]
-cw<-subset(cw, !is.na(lat) & !is.na(lon))
-cw<-subset(cw, lat%%1>0 & lon%% 1>0) #Why do we use this?
-head(cw)
-cw.unique<- distinct(select(cw,lon,lat,country,species)) #remove duplicates
-dim(cw.unique)
-head(cw.unique)
 
 # Removing outliers by country
+
+cw<-filter(cw, country !="Canada")#Remove Canada
+cw<-filter(cw, country !="United Arab Emirates") #remove UAE (listed as escapes)
+unique(cw$country)
+cw<-subset(cw, basisOfRecord == "HUMAN_OBSERVATION")
+
+### South Africa Points ##
+cw_south_africa<-subset(cw, country == "South Africa")
+dim(cw_south_africa)
+head(cw_south_africa)
+count(cw_south_africa$collectionCode)
+
+rows_to_save_cw <- which(cw_south_africa$collectionCode == "EBIRD" | 
+                           cw_south_africa$collectionCode == "EBIRD_AU" | 
+                           cw_south_africa$collectionCode == "EBIRD_CAN" | 
+                           cw_south_africa$collectionCode == "naturgucker" | 
+                           cw_south_africa$collectionCode == "Observations" | 
+                           cw_south_africa$collectionCode == "SAFRING")
+
+cw_south_africa_no_transects <- cw_south_africa[rows_to_save_cw, ] 
+table(cw_south_africa_no_transects$collectionCode)
+
+write.csv(cw_south_africa_no_transects, file = "cw_south_africa_no_transects.csv")
 plot(wrld_simpl)
-points(cw.unique, col="red")
-cw.unique<-cw.unique[complete.cases(cw.unique),]
-cw.unique<-filter(cw.unique, country !="Canada")#Remove Canada
-cw.unique<-filter(cw.unique, country !="United Arab Emirates") #remove UAE (listed as escapes)
-unique(cw.unique$country)
+points(cw_south_africa_no_transects)
+
+## Remove ALL South African Points
+cw_no_south_africa <- filter(cw, country !="South Africa")
+
+# Merge with our much better SA whydah points
+dim(cw_no_south_africa)
+dim(cw_south_africa)
+new_cw <- rbind(cw_no_south_africa, cw_south_africa)
+dim(new_cw)
+
+new_cw<-subset(new_cw, !is.na(lat) & !is.na(lon))
+new_cw_unique<- distinct(select(new_cw,lon,lat,country,species)) #remove duplicates
+dim(new_cw_unique)
 
 # Remove outliers by lon/lat
-filter(cw.unique, lon<(-72) & lat>(35)) #find northern midwest point
+filter(new_cw_unique, lon<(-72) & lat>(35)) #find northern midwest point
 points(-77.22568,38.97612)
-which(cw.unique$lon == -77.22568, cw.unique$lat== 38.97612) #find it in the data.frame
-cw.unique<- cw.unique[-6046,] #remove that row!
+which(cw$lon == -77.22568, cw$lat== 38.97612) #find it in the data.frame
+#cw.unique<- cw.unique[-5,] #remove that row!
 
 # Check Common Waxbill Points
 plot(wrld_simpl)
-points(cw.unique, col="red")
+points(new_cw_unique, col="red")
 
 # Thin Common Waxbill
 setwd("~/Desktop/Whydah Project/whydah/Output")
 crs <- CRS('+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs')
 
-dim(cw.unique)
+dim(new_cw_unique)
 thin_cw <-spThin(
-  cw.unique, 
+  new_cw_unique, 
   x.col = "lon",
   y.col = "lat",
   dist = 3000,
@@ -345,7 +371,6 @@ write.csv(bronze, "bronze_full_set.csv")
 head(bronze)
 names(bronze$basisOfRecord)
 bronze<-subset(bronze, basisOfRecord == "HUMAN_OBSERVATION")
-
 
 ### South Africa Points ##
 bronze_south_africa<-subset(bronze, country == "South Africa")
@@ -480,6 +505,7 @@ write.SpThin(
 # Read .csv of thinned points
 thin_nutmeg2<-read.csv("thin_0001.csv", head=T)
 head(thin_nutmeg2) #Always check to make sure this shows correct species
+write.csv(thin_nutmeg2, "nutmeg_thinned.csv")
 
 ####################################################################################################
 ################################   Black-rumped Waxbill Occs   ######################################
@@ -682,6 +708,9 @@ LULC_layer <- readGDAL("LULC_Resampled.tif")
 LULC_raster <- raster(LULC_layer)
 plot(LULC_raster)
 
+LULC_layer_world_map <- readGDAL("LULC_Resampled_clipped_world_map.tif")
+LULC_layer_world_map_raster <- raster(LULC_layer_world_map)
+plot(LULC_layer_world_map_raster)
 
 # get the file names...these should be all of our our worldclim
 files <- list.files(path="~/Desktop/Whydah Project/whydah/Data/wc5", pattern="bil", full.names=TRUE)
@@ -691,11 +720,16 @@ files
 climate <- stack(files)
 names(climate)
 
+res(climate[[1]])
+extent(climate[[1]])
 hosts <- stack(pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
 names(hosts)
 
 LULC <- stack(LULC_raster)
 names(LULC)
+
+LULC_world_map <- stack(LULC_layer_world_map_raster)
+names(LULC_world_map)
 
 climate_and_hosts <- stack(files, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
 names(climate_and_hosts)
@@ -756,12 +790,12 @@ training_suitability_climate<-na.omit(training_suitability_climate)
 ten_thresh_climate <- quantile(training_suitability_climate, 0.1, na.rm = TRUE)
 ten_thresh_climate
 
-pred_binary_climate <- training_suitability_climate > 0.2886858 #where are known presence greater than threshold?
+pred_binary_climate <- training_suitability_climate > 0.2887254 #where are known presence greater than threshold?
 length(pred_binary_climate[pred_binary_climate==TRUE]) # these are "a" the true positives
 length(pred_binary_climate[pred_binary_climate==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate <- extract(px_climate_full_florida, backg_with_florida)
-pred_binary_background_climate <- background_suitability_climate > 0.2886858
+pred_binary_background_climate <- background_suitability_climate > 0.2887254
 
 length(pred_binary_background_climate[pred_binary_background_climate==TRUE]) #these are "b" the false pos
 length(pred_binary_background_climate[pred_binary_background_climate==FALSE]) # these are "d" the true neg 
@@ -776,38 +810,36 @@ mx_hosts_florida <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_flo
                            args=c('responsecurves=TRUE', 
                                   'replicatetype=crossvalidate', 'replicates=5',
                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-
 mx_hosts_florida@results
+
 # all occurrences
 mx_hosts_model_full_florida <- maxent(hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                       args=c('responsecurves=TRUE',
                                              'writebackgroundpredictions=TRUE'))
 
-
+mx_hosts_model_full_florida@results
 response(mx_hosts_model_full_florida)
 plot(mx_hosts_model_full_florida)
-mx_hosts_model_full_florida@results
-mx_hosts_model_full_florida@lambdas
-
+dim(thin_ptw_with_florida_coords)
 px_hosts_model <- predict(hosts, mx_hosts_model_full_florida, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_hosts_model, main= 'Maxent, raw values')
 writeRaster(px_hosts_model, filename="hosts_model_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
 # 10% Min. Training Pres Threshold
-training_suitability_hosts <- extract(px_hosts_model, thin_ptw_with_florida_coords) #all predicted values, all occs
-training_suitability_hosts <- na.omit(training_suitability_hosts)
-ten_thresh_hosts <- quantile(training_suitability_hosts, 0.1, na.rm = TRUE)
-ten_thresh_hosts
+training_suitability_hosts_model <- extract(px_hosts_model, thin_ptw_with_florida_coords) #all predicted values, all occs
+training_suitability_hosts_model <- na.omit(training_suitability_hosts)
+ten_thresh_hosts_model <- quantile(training_suitability_hosts, 0.1, na.rm = TRUE)
+ten_thresh_hosts_model
 
 # Confusion Matrix
 training_suitability_hosts_2 <- extract(px_hosts_model, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_hosts_2 <- na.omit(training_suitability_hosts_2)
-pred_binary_hosts <- training_suitability_hosts_2 > 0.5287108 #where are known presence greater than threshold?
+pred_binary_hosts <- training_suitability_hosts_2 > 0.03504775 #where are known presence greater than threshold?
 length(pred_binary_hosts[pred_binary_hosts==TRUE]) # these are "a" the true positives
 length(pred_binary_hosts[pred_binary_hosts==FALSE]) #these are "c" the false negatives
 
 background_suitability_hosts <- extract(px_hosts_model, backg_with_florida)
-pred_binary_background_hosts <- background_suitability_hosts > 0.5287108
+pred_binary_background_hosts <- background_suitability_hosts > 0.03504775
 
 length(pred_binary_background_hosts[pred_binary_background_hosts==TRUE]) #these are "b" the false pos
 length(pred_binary_background_hosts[pred_binary_background_hosts==FALSE]) # these are "d" the true neg 
@@ -829,9 +861,8 @@ mx_LULC_model_full_florida <- maxent(LULC, thin_ptw_with_florida_coords, a=backg
                                                         'writebackgroundpredictions=TRUE'))
 
 response(mx_LULC_model_full_florida)
-plot(mx_LULC_model_full_florida)
 mx_LULC_model_full_florida@results
-mx_LULC_model_full_florida@lambdas
+mx_LULC_model_full_florida@path
 
 px_LULC_model_full_occurrences <- predict(LULC, mx_LULC_model_full_florida, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_LULC_model_full_occurrences, main= 'Maxent, raw values')
@@ -846,16 +877,15 @@ ten_thresh_LULC
 # Confusion Matrix
 training_suitability_LULC <- extract(px_LULC_model_full_occurrences, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_LULC <- na.omit(training_suitability_LULC)
-pred_binary_LULC <- training_suitability_LULC > 0.3480669 #where are known presence greater than threshold?
+pred_binary_LULC <- training_suitability_LULC > 0.3627162 #where are known presence greater than threshold?
 length(pred_binary_LULC[pred_binary_LULC==TRUE]) # these are "a" the true positives
 length(pred_binary_LULC[pred_binary_LULC==FALSE]) #these are "c" the false negatives
 
 background_suitability_LULC <- extract(px_LULC_model_full_occurrences, backg_with_florida)
-pred_binary_background_LULC <- background_suitability_LULC > 0.3480669
+pred_binary_background_LULC <- background_suitability_LULC > 0.3627162
 
 length(pred_binary_background_LULC[pred_binary_background_LULC==TRUE]) #these are "b" the false pos
 length(pred_binary_background_LULC[pred_binary_background_LULC==FALSE]) # these are "d" the true neg 
-
 ####################################################################################################
 ################################### MaxEnt for Climate & Hosts ########################################
 ####################################################################################################
@@ -870,7 +900,6 @@ mx_climate_and_hosts_florida@results
 mx_climate_and_hosts_full_florida <- maxent(climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida, 
                                             args=c('responsecurves=TRUE',
                                                    'writebackgroundpredictions=TRUE'))
-response(mx_climate_and_hosts_full_florida)
 plot(mx_climate_and_hosts_full_florida)
 mx_climate_and_hosts_full_florida@results
 mx_climate_and_hosts_full_florida@lambdas
@@ -888,12 +917,12 @@ ten_thresh_climate_and_hosts
 # Confusion Matrix
 training_suitability_climate_and_hosts <- extract(px_climate_and_hosts, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_climate_and_hosts <- na.omit(training_suitability_climate_and_hosts)
-pred_binary_climate_and_hosts <- training_suitability_climate_and_hosts > 0.50214 #where are known presence greater than threshold?
+pred_binary_climate_and_hosts <- training_suitability_climate_and_hosts > 0.2033838 #where are known presence greater than threshold?
 length(pred_binary_climate_and_hosts[pred_binary_climate_and_hosts==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_and_hosts[pred_binary_climate_and_hosts==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate_and_hosts <- extract(px_climate_and_hosts, backg_with_florida)
-pred_binary_background_climate_and_hosts <- background_suitability_climate_and_hosts > 0.50214
+pred_binary_background_climate_and_hosts <- background_suitability_climate_and_hosts > 0.2033838
 
 length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_and_hosts==TRUE]) #these are "b" the false pos
 length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_and_hosts==FALSE]) # these are "d" the true neg 
@@ -910,14 +939,10 @@ mx_climate_and_LULC_model_florida <- maxent(climate_and_LULC, thin_ptw_with_flor
 
 mx_climate_and_LULC_model_florida@results
 
-
 # all occurrences
 mx_climate_and_LULC_model_full_florida <- maxent(climate_and_LULC, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
                                                  args=c('responsecurves=TRUE',
                                                         'writebackgroundpredictions=TRUE'))
-
-
-response(mx_climate_and_LULC_model_full_florida)
 plot(mx_climate_and_LULC_model_full_florida)
 mx_climate_and_LULC_model_full_florida@results
 mx_climate_and_LULC_model_full_florida@lambdas
@@ -935,15 +960,15 @@ ten_thresh_climate_and_LULC
 # Confusion Matrix
 training_suitability_climate_and_LULC <- extract(px_climate_and_LULC_model, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_climate_and_LULC <- na.omit(training_suitability_climate_and_LULC)
-pred_binary_climate_and_LULC <- training_suitability_climate_and_LULC > 0.2943432 #where are known presence greater than threshold?
+pred_binary_climate_and_LULC <- training_suitability_climate_and_LULC > 0.294104 #where are known presence greater than threshold?
 length(pred_binary_climate_and_LULC[pred_binary_climate_and_LULC==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_and_LULC[pred_binary_climate_and_LULC==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate_and_LULC <- extract(px_climate_and_LULC_model, backg_with_florida)
-pred_binary_background_exotic <- background_suitability_climate_and_LULC > 0.2943432
+pred_binary_background_climate_and_LULC <- background_suitability_climate_and_LULC > 0.294104
 
-length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
-length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
+length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_and_LULC==TRUE]) #these are "b" the false pos
+length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_and_LULC==FALSE]) # these are "d" the true neg 
 
 ####################################################################################################
 ################################### MaxEnt for Climate & Hosts & LULC ########################################
@@ -963,84 +988,138 @@ mx_climate_hosts_LULC_florida_full <- maxent(climate_and_hosts_and_LULC, thin_pt
                                                          'writebackgroundpredictions=TRUE'))
 
 
-response(mx_climate_hosts_LULC_florida_full)
 plot(mx_climate_hosts_LULC_florida_full)
 mx_climate_hosts_LULC_florida_full@results
 mx_climate_hosts_LULC_florida_full@lambdas
-
-plot(wrld_simpl)
-points(thin_bronze2, cex = .2, col = "red")
-points(thin_ptw_with_florida_2, cex = .2)
 
 px_climate_hosts_LULC_florida <- predict(climate_and_hosts_and_LULC, mx_climate_hosts_LULC_florida_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_climate_hosts_LULC_florida, main= 'Maxent, raw values')
 writeRaster(px_climate_hosts_LULC_florida, filename="climate_hosts_LULC_with_florida_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
 
 # 10% Min. Training Pres Threshold
-training_suitability_exotic_model <- extract(px_climate_hosts_LULC_model, thin_ptw_with_florida_coords) #all predicted values, all occs
-training_suitability_exotic_model <- na.omit(training_suitability_exotic_model)
-ten_thresh_exotic_model <- quantile(training_suitability_exotic_model, 0.1, na.rm = TRUE)
-ten_thresh_exotic_model
+training_suitability_climate_host_LULC <- extract(px_climate_hosts_LULC_florida, thin_ptw_with_florida_coords) #all predicted values, all occs
+training_suitability_climate_host_LULC <- na.omit(training_suitability_climate_host_LULC)
+ten_thresh_climate_host_LULC <- quantile(training_suitability_climate_host_LULC, 0.1, na.rm = TRUE)
+ten_thresh_climate_host_LULC
 
 # Confusion Matrix
-training_suitability_exotic <- extract(px_exotic_model, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
-training_suitability_exotic <- na.omit(training_suitability_exotic)
-pred_binary_exotic <- training_suitability_exotic > 0.2021041 #where are known presence greater than threshold?
-length(pred_binary_exotic[pred_binary_exotic==TRUE]) # these are "a" the true positives
-length(pred_binary_exotic[pred_binary_exotic==FALSE]) #these are "c" the false negatives
+training_suitability_climate_hosts_LULC <- extract(px_climate_hosts_LULC_florida, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
+training_suitability_climate_hosts_LULC <- na.omit(training_suitability_climate_hosts_LULC)
+pred_binary_climate_hosts_LULC <- training_suitability_climate_hosts_LULC > 0.2024266 #where are known presence greater than threshold?
+length(pred_binary_climate_hosts_LULC[pred_binary_climate_hosts_LULC==TRUE]) # these are "a" the true positives
+length(pred_binary_climate_hosts_LULC[pred_binary_climate_hosts_LULC==FALSE]) #these are "c" the false negatives
 
-background_suitability_exotic <- extract(px_exotic_model, backg_with_florida)
-pred_binary_background_exotic <- background_suitability_exotic > 0.2021041
+background_suitability_climate_hosts_LULC <- extract(px_climate_hosts_LULC_florida, backg_with_florida)
+pred_binary_background_climate_hosts_LULC <- background_suitability_climate_hosts_LULC > 0.2021041
 
-length(pred_binary_background_exotic[pred_binary_background_exotic==TRUE]) #these are "b" the false pos
-length(pred_binary_background_exotic[pred_binary_background_exotic==FALSE]) # these are "d" the true neg 
+length(pred_binary_background_climate_hosts_LULC[pred_binary_background_climate_hosts_LULC==TRUE]) #these are "b" the false pos
+length(pred_binary_background_climate_hosts_LULC[pred_binary_background_climate_hosts_LULC==FALSE]) # these are "d" the true neg 
 
 
 ####################################################################################################
 ######################################### Heat Map #################################################
 ####################################################################################################
 
-# Prepare predictions as data.frames
-map_no_host_all_occs <- rasterToPoints(px_no_host_all_occs) #make predictions raster a set of points for ggplot
-df_no_host_all_occs <- data.frame(map_no_host_all_occs) #convert to data.frame
-colnames(df_no_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+# Convert Predictions to Data.Frames
+map_climate <- rasterToPoints(px_climate_full_florida) #make predictions raster a set of points for ggplot
+df_climate <- data.frame(map_climate) #convert to data.frame
+colnames(df_climate) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
-map_exotic_host_all_occs <- rasterToPoints(px_exotic_model) #make predictions raster a set of points for ggplot
-df_exotic_host_all_occs <- data.frame(map_exotic_host_all_occs) #convert to data.frame
-colnames(df_exotic_host_all_occs) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+map_hosts <- rasterToPoints(px_hosts_model) #make predictions raster a set of points for ggplot
+df_hosts <- data.frame(map_hosts) #convert to data.frame
+colnames(df_hosts) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
-df_no_host_pres <- df_no_host_all_occs %>% mutate(pres_no_host = ifelse(Suitability >= 0.2417432, 1, 0))
-df_no_host_pres <- df_no_host_pres[,c(1,2,4)] #get only binary output
+map_LULC <- rasterToPoints(px_LULC_model_full_occurrences) #make predictions raster a set of points for ggplot
+df_LULC <- data.frame(map_LULC) #convert to data.frame
+colnames(df_LULC) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
-df_exotic_host_pres <- df_exotic_host_all_occs %>% mutate(pres_exotic_host = ifelse(Suitability >= 0.2021041, 1, 0))
-head(df_exotic_host_pres)
-df_exotic_host_pres <- df_exotic_host_pres[,c(1,2,4)] #get only binary output
+map_climate_and_LULC <- rasterToPoints(px_climate_and_LULC_model) #make predictions raster a set of points for ggplot
+df_climate_and_LULC <- data.frame(map_climate_and_LULC) #convert to data.frame
+colnames(df_climate_and_LULC) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
-df_all_presence <- left_join(df_no_host_pres, df_exotic_host_pres, by = c("lon", "lat"))
-head(df_all_presence)
-df_all_presence$total <- rowSums(df_all_presence[, c(3, 4)])
+map_climate_and_hosts <- rasterToPoints(px_climate_and_hosts) #make predictions raster a set of points for ggplot
+df_climate_and_hosts <- data.frame(map_climate_and_hosts) #convert to data.frame
+colnames(df_climate_and_hosts) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+
+map_climate_hosts_LULC <- rasterToPoints(px_climate_hosts_LULC_florida) #make predictions raster a set of points for ggplot
+df_climate_hosts_LULC <- data.frame(map_climate_hosts_LULC) #convert to data.frame
+colnames(df_climate_hosts_LULC) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+
+# Make Binary Maps
+df_climate_pres <- df_climate %>% mutate(pres_climate = ifelse(Suitability >= .2887254, 1, 0))
+df_climate_pres <- df_climate_pres[,c(1,2,4)] #get only binary output
+
+df_hosts_pres <- df_hosts %>% mutate(pres_hosts = ifelse(Suitability >= 0.03504775, 1, 0))
+head(df_hosts_pres)
+df_hosts_pres <- df_hosts_pres[,c(1,2,4)] #get only binary output
+
+
+df_LULC_pres <- df_LULC %>% mutate(pres_LULC = ifelse(Suitability >= 0.3627162, 1, 0))
+head(df_LULC_pres)
+df_LULC_pres <- df_LULC_pres[,c(1,2,4)] #get only binary output
+
+df_climate_and_hosts_pres <- df_climate_and_hosts %>% mutate(pres_climate_and_host = ifelse(Suitability >= 0.50215, 1, 0))
+head(df_climate_and_hosts_pres)
+df_climate_and_hosts_pres <- df_climate_and_hosts_pres[,c(1,2,4)] #get only binary output
+
+df_climate_and_LULC_pres <- df_climate_and_LULC %>% mutate(pres_climate_and_LULC = ifelse(Suitability >= .298104, 1, 0))
+head(df_climate_and_LULC_pres)
+df_climate_and_LULC_pres <- df_climate_and_LULC_pres[,c(1,2,4)] #get only binary output
+
+df_climate_hosts_LULC_pres <- df_climate_hosts_LULC %>% mutate(pres_climate_host_LULC = ifelse(Suitability >= 0.2021041, 1, 0))
+head(df_climate_hosts_LULC_pres)
+df_climate_hosts_LULC_pres <- df_climate_hosts_LULC_pres[,c(1,2,4)] #get only binary output
+
+# # Gather all for heatmap
+# df_all_presence <- left_join(df_climate_pres, df_hosts_pres, by = c("lon", "lat"),suffix = c(".x", ".y"))
+# head(df_all_presence)
+# df_all_presence$total <- rowSums(df_all_presence[, c(3, 4)])
 
 # Converting Heatmap to geotiff
-head(df_all_presence)
-df_all_presences_combined<-df_all_presence[,c(1,2,5)]
-head(df_all_presences_combined)
-coordinates(df_all_presences_combined) <- ~ lon + lat
-gridded(df_all_presences_combined) <- TRUE
-raster_of_heatmap <- raster(df_all_presences_combined)
-writeRaster(raster_of_heatmap, filename="all_presence_combined_whydah.tif", format="GTiff", overwrite=TRUE)
+# head(df_all_presence)
+# df_all_presences_combined<-df_all_presence[,c(1,2,5)]
+# head(df_all_presences_combined)
+# coordinates(df_all_presences_combined) <- ~ lon + lat
+# gridded(df_all_presences_combined) <- TRUE
+# raster_of_heatmap <- raster(df_all_presences_combined)
+# writeRaster(raster_of_heatmap, filename="all_presence_combined_whydah.tif", format="GTiff", overwrite=TRUE)
 
-# Binary map for No Hosts
-coordinates(df_no_host_pres) <- ~ lon + lat
-gridded(df_no_host_pres) <- TRUE
-raster_no_host <- raster(df_no_host_pres)
-plot(raster_no_host)
-writeRaster(raster_no_host, filename="no_host_raster.tif", format="GTiff", overwrite=TRUE)
+# Binary map for climate
+coordinates(df_climate_pres) <- ~ lon + lat
+gridded(df_climate_pres) <- TRUE
+raster_climate_model <- raster(df_climate_pres)
+plot(raster_climate_model)
+writeRaster(raster_climate_model, filename="climate_pres_raster.tif", format="GTiff", overwrite=TRUE)
 
-# Binary map for exotic host
-coordinates(df_exotic_host_pres) <- ~ lon + lat
-gridded(df_exotic_host_pres) <- TRUE
-raster_exotic_host <- raster(df_exotic_host_pres)
-writeRaster(raster_exotic_host, filename="exotic_host_raster.tif", format="GTiff", overwrite=TRUE)
+# Binary map for hosts
+coordinates(df_hosts_pres) <- ~ lon + lat
+gridded(df_hosts_pres) <- TRUE
+raster_hosts_pres <- raster(df_hosts_pres)
+writeRaster(raster_hosts_pres, filename="hosts_pres_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for LULC
+coordinates(df_LULC_pres) <- ~ lon + lat
+gridded(df_LULC_pres) <- TRUE
+raster_LULC_pres <- raster(df_LULC_pres)
+writeRaster(raster_LULC_pres, filename="LULC_pres_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for climate & hosts
+coordinates(df_climate_and_hosts_pres) <- ~ lon + lat
+gridded(df_climate_and_hosts_pres) <- TRUE
+raster_climate_host_pres <- raster(df_climate_and_hosts_pres)
+writeRaster(raster_climate_host_pres, filename="climate_host_pres_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for climate & LULC
+coordinates(df_climate_and_LULC_pres) <- ~ lon + lat
+gridded(df_climate_and_LULC_pres) <- TRUE
+raster_climate_LULC_pres <- raster(df_climate_and_LULC_pres)
+writeRaster(raster_climate_LULC_pres, filename="climate_LULC_pres_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for climate & hosts & LULC
+coordinates(df_climate_hosts_LULC_pres) <- ~ lon + lat
+gridded(df_climate_hosts_LULC_pres) <- TRUE
+raster_climate_host_LULC_pres <- raster(df_climate_hosts_LULC_pres)
+writeRaster(raster_climate_host_LULC_pres, filename="climate_host_LULC_raster.tif", format="GTiff", overwrite=TRUE)
 
 ####################################################################################################
 ########################### Predicted Occupied Area for North America ##############################
@@ -1063,21 +1142,53 @@ usa2 <- spChFIDs(usa, as.character(30))
 
 usa_and_antilles <- spRbind(usa2,antilles)
 
-# No Host Raster of NA
-no_host_north_america_binary <- crop(raster_no_host, north_america_extent)
-plot(no_host_north_america_binary)
-no_host_usa_antilles_binary <- mask(no_host_north_america_binary, usa_and_antilles)
-plot(no_host_usa_antilles_binary)
-total_cells_no_host <- sum(na.omit(no_host_usa_antilles_binary@data@values))
-total_cells_no_host * 10
+# Climate Raster of NA
+climate_north_america_binary <- crop(raster_climate_model, north_america_extent)
+plot(climate_north_america_binary)
+climate_usa_antilles_binary <- mask(climate_north_america_binary, usa_and_antilles)
+plot(climate_usa_antilles_binary)
+total_cells_climate <- sum(na.omit(climate_usa_antilles_binary@data@values))
+total_cells_climate * 10
 
-# Exotic Host Raster of NA
-exotic_host_north_america_binary <- crop(raster_exotic_host, north_america_extent)
-plot(exotic_host_north_america_binary)
-exotic_host_usa_antilles_binary <- mask(exotic_host_north_america_binary, usa_and_antilles)
-plot(exotic_host_usa_antilles_binary)
-total_cells_exotic_host <- sum(na.omit(exotic_host_usa_antilles_binary@data@values))
-total_cells_exotic_host * 10
+# Host Raster of NA
+host_north_america_binary <- crop(raster_hosts_pres, north_america_extent)
+plot(host_north_america_binary)
+host_usa_antilles_binary <- mask(host_north_america_binary, usa_and_antilles)
+plot(host_usa_antilles_binary)
+total_cells_host <- sum(na.omit(host_usa_antilles_binary@data@values))
+total_cells_host * 10
+
+# habitat Raster of NA
+habitat_north_america_binary <- crop(raster_LULC_pres, north_america_extent)
+plot(habitat_north_america_binary)
+habitat_usa_antilles_binary <- mask(habitat_north_america_binary, usa_and_antilles)
+plot(habitat_usa_antilles_binary)
+total_cells_habitat <- sum(na.omit(habitat_usa_antilles_binary@data@values))
+total_cells_habitat * 10
+
+# climate and host  Raster of NA
+climate_and_host_north_america_binary <- crop(raster_climate_host_pres, north_america_extent)
+plot(climate_and_host_north_america_binary)
+climate_and_host_usa_antilles_binary <- mask(climate_and_host_north_america_binary, usa_and_antilles)
+plot(climate_and_host_usa_antilles_binary)
+total_cells_climate_and_host <- sum(na.omit(climate_and_host_usa_antilles_binary@data@values))
+total_cells_climate_and_host * 10
+
+# climate and habitat Raster of NA
+climate_and_habitat_north_america_binary <- crop(raster_climate_LULC_pres, north_america_extent)
+plot(climate_and_habitat_north_america_binary)
+climate_and_habitat_usa_antilles_binary <- mask(climate_and_habitat_north_america_binary, usa_and_antilles)
+plot(climate_and_habitat_usa_antilles_binary)
+total_cells_climate_and_habitat <- sum(na.omit(climate_and_habitat_usa_antilles_binary@data@values))
+total_cells_climate_and_habitat * 10
+
+# climate and habitat and host  Raster of NA
+climate_host_habitat_north_america_binary <- crop(raster_climate_host_LULC_pres, north_america_extent)
+plot(climate_host_habitat_north_america_binary)
+climate_host_habitat_usa_antilles_binary <- mask(climate_host_habitat_north_america_binary, usa_and_antilles)
+plot(climate_host_habitat_usa_antilles_binary)
+total_cells_climate_and_host_and_habitat <- sum(na.omit(climate_host_habitat_usa_antilles_binary@data@values))
+total_cells_climate_and_host_and_habitat * 10
 
 ####################################################################################################
 #################################### Calculating Schoner's D #######################################
