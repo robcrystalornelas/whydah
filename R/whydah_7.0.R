@@ -728,6 +728,9 @@ names(hosts)
 LULC <- stack(LULC_raster)
 names(LULC)
 
+hosts_and_habitat <- stack(LULC_raster, pa_raster_cw,pa_raster_ocw,pa_raster_nutmeg,pa_raster_bronze,pa_raster_black_rumped_waxbill,pa_raster_silverbill)
+names(hosts_and_habitat)
+
 LULC_world_map <- stack(LULC_layer_world_map_raster)
 names(LULC_world_map)
 
@@ -971,6 +974,50 @@ length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_an
 length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_and_LULC==FALSE]) # these are "d" the true neg 
 
 ####################################################################################################
+################################### MaxEnt for Hosts & Habitat ########################################
+####################################################################################################
+
+# k-fold
+mx_hosts_and_habitat <- maxent(hosts_and_habitat, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
+                                            args=c('responsecurves=TRUE', 
+                                                   'replicatetype=crossvalidate', 'replicates=5',
+                                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+
+mx_hosts_and_habitat@results
+
+# all occurrences
+mx_hosts_and_habitat_full <- maxent(hosts_and_habitat, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1",
+                                                 args=c('responsecurves=TRUE',
+                                                        'writebackgroundpredictions=TRUE'))
+plot(mx_hosts_and_habitat_full)
+mx_hosts_and_habitat_full@results
+mx_hosts_and_habitat_full@lambdas
+
+px_hosts_and_habitat <- predict(hosts_and_habitat, mx_hosts_and_habitat_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
+plot(px_hosts_and_habitat, main= 'Maxent, raw values')
+writeRaster(px_hosts_and_habitat, filename="hosts_and_habitat_for_qgis.tif", format="GTiff", overwrite=TRUE) #exporting a GEOtiff
+
+# 10% Min. Training Pres Threshold
+training_suitability_hosts_and_habitat <- extract(px_hosts_and_habitat, thin_ptw_with_florida_coords) #all predicted values, all occs
+training_suitability_hosts_and_habitat <- na.omit(training_suitability_hosts_and_habitat)
+ten_thresh_hosts_and_habitat <- quantile(training_suitability_hosts_and_habitat, 0.1, na.rm = TRUE)
+ten_thresh_hosts_and_habitat
+
+# Confusion Matrix
+training_suitability_hosts_and_habitat <- extract(px_hosts_and_habitat, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
+training_suitability_hosts_and_habitat <- na.omit(training_suitability_hosts_and_habitat)
+pred_binary_hosts_and_habitat <- training_suitability_hosts_and_habitat > 0.04597919 #where are known presence greater than threshold?
+length(pred_binary_hosts_and_habitat[pred_binary_hosts_and_habitat==TRUE]) # these are "a" the true positives
+length(pred_binary_hosts_and_habitat[pred_binary_hosts_and_habitat==FALSE]) #these are "c" the false negatives
+
+background_suitability_hosts_and_habitat <- extract(px_hosts_and_habitat, backg_with_florida)
+pred_binary_background_hosts_and_habitat <- background_suitability_hosts_and_habitat > 0.04597919
+
+length(pred_binary_background_hosts_and_habitat[pred_binary_background_hosts_and_habitat==TRUE]) #these are "b" the false pos
+length(pred_binary_background_hosts_and_habitat[pred_binary_background_hosts_and_habitat==FALSE]) # these are "d" the true neg 
+
+
+####################################################################################################
 ################################### MaxEnt for Climate & Hosts & LULC ########################################
 ####################################################################################################
 
@@ -1041,6 +1088,10 @@ map_climate_and_hosts <- rasterToPoints(px_climate_and_hosts) #make predictions 
 df_climate_and_hosts <- data.frame(map_climate_and_hosts) #convert to data.frame
 colnames(df_climate_and_hosts) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
+map_hosts_and_habitat <- rasterToPoints(px_hosts_and_habitat) #make predictions raster a set of points for ggplot
+df_hosts_and_habitat <- data.frame(map_hosts_and_habitat) #convert to data.frame
+colnames(df_hosts_and_habitat) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
+
 map_climate_hosts_LULC <- rasterToPoints(px_climate_hosts_LULC_florida) #make predictions raster a set of points for ggplot
 df_climate_hosts_LULC <- data.frame(map_climate_hosts_LULC) #convert to data.frame
 colnames(df_climate_hosts_LULC) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
@@ -1053,7 +1104,6 @@ df_hosts_pres <- df_hosts %>% mutate(pres_hosts = ifelse(Suitability >= 0.035047
 head(df_hosts_pres)
 df_hosts_pres <- df_hosts_pres[,c(1,2,4)] #get only binary output
 
-
 df_LULC_pres <- df_LULC %>% mutate(pres_LULC = ifelse(Suitability >= 0.3627162, 1, 0))
 head(df_LULC_pres)
 df_LULC_pres <- df_LULC_pres[,c(1,2,4)] #get only binary output
@@ -1061,6 +1111,10 @@ df_LULC_pres <- df_LULC_pres[,c(1,2,4)] #get only binary output
 df_climate_and_hosts_pres <- df_climate_and_hosts %>% mutate(pres_climate_and_host = ifelse(Suitability >= 0.50215, 1, 0))
 head(df_climate_and_hosts_pres)
 df_climate_and_hosts_pres <- df_climate_and_hosts_pres[,c(1,2,4)] #get only binary output
+
+df_hosts_and_habitat_pres <- df_hosts_and_habitat %>% mutate(pres_hosts_and_habitat = ifelse(Suitability >= 0.04597919, 1, 0))
+head(df_hosts_and_habitat_pres)
+df_hosts_and_habitat_pres <- df_hosts_and_habitat_pres[,c(1,2,4)] #get only binary output
 
 df_climate_and_LULC_pres <- df_climate_and_LULC %>% mutate(pres_climate_and_LULC = ifelse(Suitability >= .298104, 1, 0))
 head(df_climate_and_LULC_pres)
@@ -1108,6 +1162,12 @@ coordinates(df_climate_and_hosts_pres) <- ~ lon + lat
 gridded(df_climate_and_hosts_pres) <- TRUE
 raster_climate_host_pres <- raster(df_climate_and_hosts_pres)
 writeRaster(raster_climate_host_pres, filename="climate_host_pres_raster.tif", format="GTiff", overwrite=TRUE)
+
+# Binary map for hosts and habitat
+coordinates(df_hosts_and_habitat_pres) <- ~ lon + lat
+gridded(df_hosts_and_habitat_pres) <- TRUE
+raster_hosts_and_habitat_pres <- raster(df_hosts_and_habitat_pres)
+writeRaster(raster_hosts_and_habitat_pres, filename="hosts_and_habitat_pres_raster.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for climate & LULC
 coordinates(df_climate_and_LULC_pres) <- ~ lon + lat

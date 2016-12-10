@@ -21,6 +21,7 @@ bronze_backg <- randomPoints(bronze_buffer, n=10000)
 nutmeg_buffer <- readGDAL("nutmeg_buffer_cropped.tif")
 nutmeg_buffer <- raster(nutmeg_buffer)
 nutmeg_backg <- randomPoints(nutmeg_buffer, n=10000)
+dim(nutmeg_backg)
 
 black_rumped_buffer <- readGDAL("black_rumped_buffer_cropped.tif")
 black_rumped_buffer <- raster(black_rumped_buffer)
@@ -30,9 +31,6 @@ silverbill_buffer <- readGDAL("silverbill_buffer_cropped.tif")
 silverbill_buffer <- raster(silverbill_buffer)
 silverbill_backg <- randomPoints(silverbill_buffer, n=10000)
 
-grasses_buffer <- readGDAL("grasses_buffer_cropped.tif")
-grasses_buffer <- raster(grasses_buffer)
-grasses_backg <- randomPoints(grasses_buffer, n=10000)
 
 ####################################################################################################
 ##########################################   CW   ##################################################
@@ -51,6 +49,7 @@ mx_cw_full <- maxent(climate, thin_cw, a=cw_backg,
                           args=c('responsecurves=TRUE',
                                  'writebackgroundpredictions=TRUE'))
 
+mx_cw_full@results
 px_cw_full <- predict(climate, mx_cw_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_cw_full, main= 'Maxent, raw values')
 
@@ -61,17 +60,17 @@ write.csv(thin_ocw2, file = "ocw_occurrences.csv")
 
 thin_ocw3 <- thin_ocw2[,1:2]
 head(thin_ocw3)
-mx_orange_waxbill <- maxent(climate, thin_ocw3, a= ocw_backg, 
-                            args=c('responsecurves=TRUE', 
-                                   'replicatetype=crossvalidate', 'replicates=5',
-                                   'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_orange_waxbill@results
+# mx_orange_waxbill <- maxent(climate, thin_ocw3, a= ocw_backg, 
+#                             args=c('responsecurves=TRUE', 
+#                                    'replicatetype=crossvalidate', 'replicates=5',
+#                                    'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_ocw_full <- maxent(climate, thin_ocw3, a=ocw_backg, 
+mx_ocw_full <- maxent(climate, thin_ocw2, a=ocw_backg, 
                      args=c('responsecurves=TRUE',
                             'writebackgroundpredictions=TRUE'))
 
+mx_ocw_full@results
 px_ocw_full <- predict(climate, mx_ocw_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_ocw_full, main= 'Maxent, raw values')
 
@@ -107,12 +106,10 @@ mx_nutmeg_mannikin <- maxent(climate, thin_nutmeg2, a= nutmeg_backg,
                                    'replicatetype=crossvalidate', 'replicates=5',
                                    'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
 
-mx_nutmeg_mannikin@results
-
 mx_nutmeg_full <- maxent(climate, thin_nutmeg2, a=nutmeg_backg, 
                          args=c('responsecurves=TRUE',
                                 'writebackgroundpredictions=TRUE'))
-
+mx_nutmeg_full@results
 px_nutmeg_full <- predict(climate, mx_nutmeg_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_nutmeg_full, main= 'Maxent, raw values')
 
@@ -157,32 +154,9 @@ mx_silverbill_full <- maxent(climate, thin_silverbill2, a=silverbill_backg,
 px_silverbill_full <- predict(climate, mx_silverbill_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
 plot(px_silverbill_full, main= 'Maxent, raw values')
 
-
-
-####################################################################################################
-#####################################     GRASSES     ##############################################
-####################################################################################################
-
-head(thin_grasses)
-thin_grasses3 <- thin_grasses[,1:2]
-mx_grasses <- maxent(climate, thin_grasses3, a= grasses_backg, 
-                        args=c('responsecurves=TRUE', 
-                               'replicatetype=crossvalidate', 'replicates=5',
-                               'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-
-mx_grasses@results
-
-mx_grasses_full <- maxent(climate, thin_grasses, a=silverbill_backg, 
-                             args=c('responsecurves=TRUE',
-                                    'writebackgroundpredictions=TRUE'))
-
-px_grasses_full <- predict(climate, mx_silverbill_full, progress='text') #make predictions of habitat suitability can include argument ext=ext
-plot(px_silverbill_full, main= 'Maxent, raw values')
 ####################################################################################################
 ######################################## Prepare Predictors ##########################################
 ####################################################################################################
-summary(climate)
-summary(climate_and_LULC)
 
 suit_climate_and_hosts <- stack(climate, px_cw_full, px_ocw_full, px_bronze_full, px_nutmeg_full, px_black_rumped_full, px_silverbill_full)
 suit_climate_and_grasses <- stack(climate, px_grasses_full)
@@ -190,10 +164,21 @@ suit_climate_and_host_and_LULC <- stack(climate, LULC_raster, px_cw_full, px_ocw
 suit_climate_and_host_and_grasses <- stack(suit_climate_and_hosts, px_grasses_full)
 suit_hosts <- stack(px_cw_full, px_ocw_full, px_bronze_full, px_nutmeg_full, px_black_rumped_full, px_silverbill_full)
 
+suit_habitat_and_hosts <- stack(LULC_raster, px_cw_full, px_ocw_full, px_bronze_full, px_nutmeg_full, px_black_rumped_full, px_silverbill_full)
+
 
 ####################################################################################################
 ####################################### Maxent SUIT Climate & Hosts ################################
 ####################################################################################################
+
+mx_suit_habitat_hosts_florida <- maxent(suit_habitat_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida,
+                                        args=c('responsecurves=TRUE', 
+                                               'replicatetype=crossvalidate', 'replicates=5',
+                                               'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
+mx_suit_habitat_hosts_florida@results
+
+
+
 mx_suit_climate_hosts_florida <- maxent(suit_climate_and_hosts, thin_ptw_with_florida_coords, a=backg_with_florida,
                                         args=c('responsecurves=TRUE', 
                                                'replicatetype=crossvalidate', 'replicates=5',
@@ -232,7 +217,7 @@ mx_suit_hosts_florida <- maxent(suit_hosts, thin_ptw_with_florida_coords, a=back
                                                 args=c('responsecurves=TRUE', 
                                                        'replicatetype=crossvalidate', 'replicates=5',
                                                        'writebackgroundpredictions=TRUE','outputgrids=TRUE'))
-mx_suit_climate_hosts_grasses_florida@results
+mx_suit_hosts_florida@results
 
 ####################################################################################################
 ####################################################################################################
