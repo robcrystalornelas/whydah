@@ -793,12 +793,12 @@ training_suitability_climate<-na.omit(training_suitability_climate)
 ten_thresh_climate <- quantile(training_suitability_climate, 0.1, na.rm = TRUE)
 ten_thresh_climate
 
-pred_binary_climate <- training_suitability_climate > 0.2887254 #where are known presence greater than threshold?
+pred_binary_climate <- training_suitability_climate > ten_thresh_climate #where are known presence greater than threshold?
 length(pred_binary_climate[pred_binary_climate==TRUE]) # these are "a" the true positives
 length(pred_binary_climate[pred_binary_climate==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate <- extract(px_climate_full_florida, backg_with_florida)
-pred_binary_background_climate <- background_suitability_climate > 0.2887254
+pred_binary_background_climate <- background_suitability_climate > ten_thresh_climate
 
 length(pred_binary_background_climate[pred_binary_background_climate==TRUE]) #these are "b" the false pos
 length(pred_binary_background_climate[pred_binary_background_climate==FALSE]) # these are "d" the true neg 
@@ -833,16 +833,18 @@ training_suitability_hosts_model <- extract(px_hosts_model, thin_ptw_with_florid
 training_suitability_hosts_model <- na.omit(training_suitability_hosts)
 ten_thresh_hosts_model <- quantile(training_suitability_hosts, 0.1, na.rm = TRUE)
 ten_thresh_hosts_model
+###
+ten_thresh_hosts_model <- .036
 
 # Confusion Matrix
 training_suitability_hosts_2 <- extract(px_hosts_model, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_hosts_2 <- na.omit(training_suitability_hosts_2)
-pred_binary_hosts <- training_suitability_hosts_2 > 0.03504775 #where are known presence greater than threshold?
+pred_binary_hosts <- training_suitability_hosts_2 > ten_thresh_hosts_model #where are known presence greater than threshold?
 length(pred_binary_hosts[pred_binary_hosts==TRUE]) # these are "a" the true positives
 length(pred_binary_hosts[pred_binary_hosts==FALSE]) #these are "c" the false negatives
 
 background_suitability_hosts <- extract(px_hosts_model, backg_with_florida)
-pred_binary_background_hosts <- background_suitability_hosts > 0.03504775
+pred_binary_background_hosts <- background_suitability_hosts > ten_thresh_hosts_model
 
 length(pred_binary_background_hosts[pred_binary_background_hosts==TRUE]) #these are "b" the false pos
 length(pred_binary_background_hosts[pred_binary_background_hosts==FALSE]) # these are "d" the true neg 
@@ -880,12 +882,12 @@ ten_thresh_LULC
 # Confusion Matrix
 training_suitability_LULC <- extract(px_LULC_model_full_occurrences, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_LULC <- na.omit(training_suitability_LULC)
-pred_binary_LULC <- training_suitability_LULC > 0.3627162 #where are known presence greater than threshold?
+pred_binary_LULC <- training_suitability_LULC > ten_thresh_LULC #where are known presence greater than threshold?
 length(pred_binary_LULC[pred_binary_LULC==TRUE]) # these are "a" the true positives
 length(pred_binary_LULC[pred_binary_LULC==FALSE]) #these are "c" the false negatives
 
 background_suitability_LULC <- extract(px_LULC_model_full_occurrences, backg_with_florida)
-pred_binary_background_LULC <- background_suitability_LULC > 0.3627162
+pred_binary_background_LULC <- background_suitability_LULC > ten_thresh_LULC
 
 length(pred_binary_background_LULC[pred_binary_background_LULC==TRUE]) #these are "b" the false pos
 length(pred_binary_background_LULC[pred_binary_background_LULC==FALSE]) # these are "d" the true neg 
@@ -920,12 +922,12 @@ ten_thresh_climate_and_hosts
 # Confusion Matrix
 training_suitability_climate_and_hosts <- extract(px_climate_and_hosts, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_climate_and_hosts <- na.omit(training_suitability_climate_and_hosts)
-pred_binary_climate_and_hosts <- training_suitability_climate_and_hosts > 0.2033838 #where are known presence greater than threshold?
+pred_binary_climate_and_hosts <- training_suitability_climate_and_hosts > ten_thresh_climate_and_hosts #where are known presence greater than threshold?
 length(pred_binary_climate_and_hosts[pred_binary_climate_and_hosts==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_and_hosts[pred_binary_climate_and_hosts==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate_and_hosts <- extract(px_climate_and_hosts, backg_with_florida)
-pred_binary_background_climate_and_hosts <- background_suitability_climate_and_hosts > 0.2033838
+pred_binary_background_climate_and_hosts <- background_suitability_climate_and_hosts > ten_thresh_climate_and_hosts
 
 length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_and_hosts==TRUE]) #these are "b" the false pos
 length(pred_binary_background_climate_and_hosts[pred_binary_background_climate_and_hosts==FALSE]) # these are "d" the true neg 
@@ -963,12 +965,12 @@ ten_thresh_climate_and_LULC
 # Confusion Matrix
 training_suitability_climate_and_LULC <- extract(px_climate_and_LULC_model, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_climate_and_LULC <- na.omit(training_suitability_climate_and_LULC)
-pred_binary_climate_and_LULC <- training_suitability_climate_and_LULC > 0.294104 #where are known presence greater than threshold?
+pred_binary_climate_and_LULC <- training_suitability_climate_and_LULC > ten_thresh_climate_and_LULC #where are known presence greater than threshold?
 length(pred_binary_climate_and_LULC[pred_binary_climate_and_LULC==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_and_LULC[pred_binary_climate_and_LULC==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate_and_LULC <- extract(px_climate_and_LULC_model, backg_with_florida)
-pred_binary_background_climate_and_LULC <- background_suitability_climate_and_LULC > 0.294104
+pred_binary_background_climate_and_LULC <- background_suitability_climate_and_LULC > ten_thresh_climate_and_LULC
 
 length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_and_LULC==TRUE]) #these are "b" the false pos
 length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_and_LULC==FALSE]) # these are "d" the true neg 
@@ -978,6 +980,7 @@ length(pred_binary_background_climate_and_LULC[pred_binary_background_climate_an
 ####################################################################################################
 
 # k-fold
+names(hosts_and_habitat)
 mx_hosts_and_habitat <- maxent(hosts_and_habitat, thin_ptw_with_florida_coords, a=backg_with_florida, factors = "band1", 
                                             args=c('responsecurves=TRUE', 
                                                    'replicatetype=crossvalidate', 'replicates=5',
@@ -1006,12 +1009,12 @@ ten_thresh_hosts_and_habitat
 # Confusion Matrix
 training_suitability_hosts_and_habitat <- extract(px_hosts_and_habitat, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_hosts_and_habitat <- na.omit(training_suitability_hosts_and_habitat)
-pred_binary_hosts_and_habitat <- training_suitability_hosts_and_habitat > 0.04597919 #where are known presence greater than threshold?
+pred_binary_hosts_and_habitat <- training_suitability_hosts_and_habitat > ten_thresh_hosts_and_habitat #where are known presence greater than threshold?
 length(pred_binary_hosts_and_habitat[pred_binary_hosts_and_habitat==TRUE]) # these are "a" the true positives
 length(pred_binary_hosts_and_habitat[pred_binary_hosts_and_habitat==FALSE]) #these are "c" the false negatives
 
 background_suitability_hosts_and_habitat <- extract(px_hosts_and_habitat, backg_with_florida)
-pred_binary_background_hosts_and_habitat <- background_suitability_hosts_and_habitat > 0.04597919
+pred_binary_background_hosts_and_habitat <- background_suitability_hosts_and_habitat > ten_thresh_hosts_and_habitat
 
 length(pred_binary_background_hosts_and_habitat[pred_binary_background_hosts_and_habitat==TRUE]) #these are "b" the false pos
 length(pred_binary_background_hosts_and_habitat[pred_binary_background_hosts_and_habitat==FALSE]) # these are "d" the true neg 
@@ -1052,12 +1055,12 @@ ten_thresh_climate_host_LULC
 # Confusion Matrix
 training_suitability_climate_hosts_LULC <- extract(px_climate_hosts_LULC_florida, thin_ptw_with_florida_coords) # extract predicted values, at known presence points
 training_suitability_climate_hosts_LULC <- na.omit(training_suitability_climate_hosts_LULC)
-pred_binary_climate_hosts_LULC <- training_suitability_climate_hosts_LULC > 0.2024266 #where are known presence greater than threshold?
+pred_binary_climate_hosts_LULC <- training_suitability_climate_hosts_LULC > ten_thresh_climate_host_LULC #where are known presence greater than threshold?
 length(pred_binary_climate_hosts_LULC[pred_binary_climate_hosts_LULC==TRUE]) # these are "a" the true positives
 length(pred_binary_climate_hosts_LULC[pred_binary_climate_hosts_LULC==FALSE]) #these are "c" the false negatives
 
 background_suitability_climate_hosts_LULC <- extract(px_climate_hosts_LULC_florida, backg_with_florida)
-pred_binary_background_climate_hosts_LULC <- background_suitability_climate_hosts_LULC > 0.2021041
+pred_binary_background_climate_hosts_LULC <- background_suitability_climate_hosts_LULC > ten_thresh_climate_host_LULC
 
 length(pred_binary_background_climate_hosts_LULC[pred_binary_background_climate_hosts_LULC==TRUE]) #these are "b" the false pos
 length(pred_binary_background_climate_hosts_LULC[pred_binary_background_climate_hosts_LULC==FALSE]) # these are "d" the true neg 
@@ -1097,30 +1100,34 @@ df_climate_hosts_LULC <- data.frame(map_climate_hosts_LULC) #convert to data.fra
 colnames(df_climate_hosts_LULC) <- c('lon', 'lat', 'Suitability') #Make appropriate column headings
 
 # Make Binary Maps
-df_climate_pres <- df_climate %>% mutate(pres_climate = ifelse(Suitability >= .2887254, 1, 0))
+df_climate_pres <- df_climate %>% mutate(pres_climate = ifelse(Suitability >= ten_thresh_climate, 1, 0))
 df_climate_pres <- df_climate_pres[,c(1,2,4)] #get only binary output
 
-df_hosts_pres <- df_hosts %>% mutate(pres_hosts = ifelse(Suitability >= 0.03504775, 1, 0))
+ten_thresh_hosts_model
+df_hosts_pres <- df_hosts %>% mutate(pres_hosts = ifelse(Suitability > ten_thresh_hosts_model, 1, 0))
 head(df_hosts_pres)
+df_hosts_pres$Suitability
+min(df_hosts_pres$Suitability)
+table(df_hosts_pres$pres_hosts)
 df_hosts_pres <- df_hosts_pres[,c(1,2,4)] #get only binary output
 
-df_LULC_pres <- df_LULC %>% mutate(pres_LULC = ifelse(Suitability >= 0.3627162, 1, 0))
+df_LULC_pres <- df_LULC %>% mutate(pres_LULC = ifelse(Suitability >= ten_thresh_LULC, 1, 0))
 head(df_LULC_pres)
 df_LULC_pres <- df_LULC_pres[,c(1,2,4)] #get only binary output
 
-df_climate_and_hosts_pres <- df_climate_and_hosts %>% mutate(pres_climate_and_host = ifelse(Suitability >= 0.50215, 1, 0))
+df_climate_and_hosts_pres <- df_climate_and_hosts %>% mutate(pres_climate_and_host = ifelse(Suitability >= ten_thresh_climate_and_hosts, 1, 0))
 head(df_climate_and_hosts_pres)
 df_climate_and_hosts_pres <- df_climate_and_hosts_pres[,c(1,2,4)] #get only binary output
 
-df_hosts_and_habitat_pres <- df_hosts_and_habitat %>% mutate(pres_hosts_and_habitat = ifelse(Suitability >= 0.04597919, 1, 0))
+df_hosts_and_habitat_pres <- df_hosts_and_habitat %>% mutate(pres_hosts_and_habitat = ifelse(Suitability >= ten_thresh_hosts_and_habitat, 1, 0))
 head(df_hosts_and_habitat_pres)
 df_hosts_and_habitat_pres <- df_hosts_and_habitat_pres[,c(1,2,4)] #get only binary output
 
-df_climate_and_LULC_pres <- df_climate_and_LULC %>% mutate(pres_climate_and_LULC = ifelse(Suitability >= .298104, 1, 0))
+df_climate_and_LULC_pres <- df_climate_and_LULC %>% mutate(pres_climate_and_LULC = ifelse(Suitability >= ten_thresh_climate_and_LULC, 1, 0))
 head(df_climate_and_LULC_pres)
 df_climate_and_LULC_pres <- df_climate_and_LULC_pres[,c(1,2,4)] #get only binary output
 
-df_climate_hosts_LULC_pres <- df_climate_hosts_LULC %>% mutate(pres_climate_host_LULC = ifelse(Suitability >= 0.2021041, 1, 0))
+df_climate_hosts_LULC_pres <- df_climate_hosts_LULC %>% mutate(pres_climate_host_LULC = ifelse(Suitability >= ten_thresh_climate_host_LULC, 1, 0))
 head(df_climate_hosts_LULC_pres)
 df_climate_hosts_LULC_pres <- df_climate_hosts_LULC_pres[,c(1,2,4)] #get only binary output
 
@@ -1142,38 +1149,37 @@ df_climate_hosts_LULC_pres <- df_climate_hosts_LULC_pres[,c(1,2,4)] #get only bi
 coordinates(df_climate_pres) <- ~ lon + lat
 gridded(df_climate_pres) <- TRUE
 raster_climate_model <- raster(df_climate_pres)
-plot(raster_climate_model)
-writeRaster(raster_climate_model, filename="climate_pres_raster.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_climate_model, filename="climate_pres_raster_new.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for hosts
 coordinates(df_hosts_pres) <- ~ lon + lat
 gridded(df_hosts_pres) <- TRUE
 raster_hosts_pres <- raster(df_hosts_pres)
-writeRaster(raster_hosts_pres, filename="hosts_pres_raster.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_hosts_pres, filename="hosts_pres_raster_new.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for LULC
 coordinates(df_LULC_pres) <- ~ lon + lat
 gridded(df_LULC_pres) <- TRUE
 raster_LULC_pres <- raster(df_LULC_pres)
-writeRaster(raster_LULC_pres, filename="LULC_pres_raster.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_LULC_pres, filename="LULC_pres_raster_new.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for climate & hosts
 coordinates(df_climate_and_hosts_pres) <- ~ lon + lat
 gridded(df_climate_and_hosts_pres) <- TRUE
 raster_climate_host_pres <- raster(df_climate_and_hosts_pres)
-writeRaster(raster_climate_host_pres, filename="climate_host_pres_raster.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_climate_host_pres, filename="climate_host_pres_raster_new.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for hosts and habitat
 coordinates(df_hosts_and_habitat_pres) <- ~ lon + lat
 gridded(df_hosts_and_habitat_pres) <- TRUE
 raster_hosts_and_habitat_pres <- raster(df_hosts_and_habitat_pres)
-writeRaster(raster_hosts_and_habitat_pres, filename="hosts_and_habitat_pres_raster.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_hosts_and_habitat_pres, filename="hosts_and_habitat_pres_raster_new.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for climate & LULC
 coordinates(df_climate_and_LULC_pres) <- ~ lon + lat
 gridded(df_climate_and_LULC_pres) <- TRUE
 raster_climate_LULC_pres <- raster(df_climate_and_LULC_pres)
-writeRaster(raster_climate_LULC_pres, filename="climate_LULC_pres_raster.tif", format="GTiff", overwrite=TRUE)
+writeRaster(raster_climate_LULC_pres, filename="climate_LULC_pres_raster_new.tif", format="GTiff", overwrite=TRUE)
 
 # Binary map for climate & hosts & LULC
 coordinates(df_climate_hosts_LULC_pres) <- ~ lon + lat
@@ -1212,10 +1218,9 @@ total_cells_climate * 10
 
 # Host Raster of NA
 host_north_america_binary <- crop(raster_hosts_pres, north_america_extent)
-plot(host_north_america_binary)
 host_usa_antilles_binary <- mask(host_north_america_binary, usa_and_antilles)
-plot(host_usa_antilles_binary)
 total_cells_host <- sum(na.omit(host_usa_antilles_binary@data@values))
+plot(host_usa_antilles_binary)
 total_cells_host * 10
 
 # habitat Raster of NA
@@ -1225,6 +1230,14 @@ habitat_usa_antilles_binary <- mask(habitat_north_america_binary, usa_and_antill
 plot(habitat_usa_antilles_binary)
 total_cells_habitat <- sum(na.omit(habitat_usa_antilles_binary@data@values))
 total_cells_habitat * 10
+
+# host and habitat raster of NA
+host_and_habitat_north_america_binary <- crop(raster_hosts_and_habitat_pres, north_america_extent)
+plot(host_and_habitat_north_america_binary)
+host_and_habitat_usa_antilles_binary <- mask(host_and_habitat_north_america_binary, usa_and_antilles)
+plot(host_and_habitat_usa_antilles_binary)
+total_cells_host_and_habitat <- sum(na.omit(host_and_habitat_usa_antilles_binary@data@values))
+total_cells_host_and_habitat * 10
 
 # climate and host  Raster of NA
 climate_and_host_north_america_binary <- crop(raster_climate_host_pres, north_america_extent)
@@ -1266,6 +1279,16 @@ exotic_grid <- sp.from.asc(exotic_asc)
 no <- niche.overlap(list(naive = naive_grid, exotic.host = exotic_grid))
 no #upper triangle is Schoner's, Lower is Hellinger's
 
+### New Thresholds
+
+
+ten_thresh_hosts
+
+e1 <- evaluate(mx_climate_full_florida, p=thin_ptw_with_florida_coords, a=backg_with_florida, x=climate)
+threshold(e1)
+
+e2 <- evaluate(mx_hosts_florida, p=thin_ptw_with_florida_coords, a=backg_with_florida, x=climate)
+threshold(e2)
 
 
 
